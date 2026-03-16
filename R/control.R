@@ -1,9 +1,11 @@
 # new_ipm_control: low-level constructor
-new_ipm_control <- function(years, delta_time, store_every, bin_width, compute_lambda, progress) {
+new_ipm_control <- function(years, delta_time, store_every, bin_width, compute_lambda, progress,
+                            integration_method, n_gl) {
   structure(
     list(years = years, delta_time = delta_time,
          store_every = store_every, bin_width = bin_width,
-         compute_lambda = compute_lambda, progress = progress),
+         compute_lambda = compute_lambda, progress = progress,
+         integration_method = integration_method, n_gl = n_gl),
     class = "ipm_control"
   )
 }
@@ -43,6 +45,19 @@ validate_ipm_control <- function(x) {
       "{.arg progress} must be TRUE or FALSE."
     )
   }
+  valid_methods <- c("midpoint", "gauss-legendre")
+  if (!is.character(x$integration_method) ||
+      length(x$integration_method) != 1 ||
+      !x$integration_method %in% valid_methods) {
+    cli::cli_abort(
+      "{.arg integration_method} must be one of {.val {valid_methods}}. Got {.val {x$integration_method}}."
+    )
+  }
+  if (!is.numeric(x$n_gl) || length(x$n_gl) != 1 || x$n_gl < 1 || x$n_gl != floor(x$n_gl)) {
+    cli::cli_abort(
+      "{.arg n_gl} must be a positive integer. Got {.val {x$n_gl}}."
+    )
+  }
   x
 }
 
@@ -57,31 +72,41 @@ validate_ipm_control <- function(x) {
 #'   only population structure is needed). Default FALSE
 #' @param progress Logical. Whether to display a progress bar during projection.
 #'   Default TRUE.
+#' @param integration_method Character. Integration method for kernel discretization.
+#'   One of \code{"midpoint"} (default, uniform midpoint rule, backward compatible)
+#'   or \code{"gauss-legendre"} (Gauss-Legendre quadrature, higher accuracy).
+#' @param n_gl Positive integer. Number of Gauss-Legendre nodes when
+#'   \code{integration_method = "gauss-legendre"}. Ignored for \code{"midpoint"}.
+#'   Default 50L.
 #' @return An object of S3 class \code{"ipm_control"}.
 #' @examples
 #' ctrl <- control(years = 10, compute_lambda = TRUE, progress = FALSE)
 #' print(ctrl)
 #' @export
 control <- function(years = 100, delta_time = 1, store_every = 1, bin_width = 1,
-                    compute_lambda = FALSE, progress = TRUE) {
+                    compute_lambda = FALSE, progress = TRUE,
+                    integration_method = "midpoint", n_gl = 50L) {
   validate_ipm_control(
     new_ipm_control(
-      years          = years,
-      delta_time     = delta_time,
-      store_every    = store_every,
-      bin_width      = bin_width,
-      compute_lambda = compute_lambda,
-      progress       = progress
+      years              = years,
+      delta_time         = delta_time,
+      store_every        = store_every,
+      bin_width          = bin_width,
+      compute_lambda     = compute_lambda,
+      progress           = progress,
+      integration_method = integration_method,
+      n_gl               = as.integer(n_gl)
     )
   )
 }
 
 #' @export
 print.ipm_control <- function(x, ...) {
-  cat(sprintf("<ipm_control>  %d years | dt=%.1f | store_every=%d | bin_width=%d | lambda=%s | progress=%s\n",
+  cat(sprintf("<ipm_control>  %d years | dt=%.1f | store_every=%d | bin_width=%d | lambda=%s | progress=%s | integration=%s\n",
               x$years, x$delta_time, x$store_every, x$bin_width,
               if (x$compute_lambda) "yes" else "no",
-              if (x$progress) "yes" else "no"))
+              if (x$progress) "yes" else "no",
+              x$integration_method))
   invisible(x)
 }
 
@@ -96,5 +121,9 @@ summary.ipm_control <- function(object, ...) {
   cat(sprintf("  Kernel bin width: %d mm\n", object$bin_width))
   cat(sprintf("  Compute lambda: %s\n", if (object$compute_lambda) "yes" else "no"))
   cat(sprintf("  Progress bar:   %s\n", if (object$progress) "yes" else "no"))
+  cat(sprintf("  Integration:    %s\n", object$integration_method))
+  if (object$integration_method == "gauss-legendre") {
+    cat(sprintf("  GL nodes (n_gl): %d\n", object$n_gl))
+  }
   invisible(object)
 }

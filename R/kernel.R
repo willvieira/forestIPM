@@ -97,7 +97,7 @@ mkKernel = function(
   plot_random # vector of [1] growth, [2] mortality, and [3] recruitment ofsets
 ){
   meshpts = Nvec_intra$meshpts
-  h = Nvec_intra$h
+  weights = Nvec_intra$weights
 
   # compute competition metrics
   BA_comp_intra <- size_to_BAcomp(
@@ -133,14 +133,14 @@ mkKernel = function(
     delta_time, BA_comp_intra, BA_comp_inter, Temp, Prec,
     pars[['growth']], pars[['mort']], plot_random
   )
-  P <- h * matrix(P_vals, nrow = n, ncol = n)
+  P <- matrix(P_vals, nrow = n, ncol = n) * rep(weights, each = n)
 
   F_vals <- ingrowth_lk(
     s1, s0,
     delta_time, plotSize, BAplot_intra, BAplot_total, Temp, Prec,
     pars[['rec']], pars[['sizeIngrowth']], plot_random[3]
   )
-  F <- h * matrix(F_vals, nrow = n, ncol = n)
+  F <- matrix(F_vals, nrow = n, ncol = n) * rep(weights, each = n)
 
   K <- P + F
 

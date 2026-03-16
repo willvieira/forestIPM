@@ -74,7 +74,9 @@ project <- function(mod, pars, stand, env, ctrl) {
   delta_time <- ctrl$delta_time
 
   # Build size distributions from stand data
-  nvec_list <- .stand_to_nvec(stand, all_species, pars, bin_w)
+  nvec_list <- .stand_to_nvec(stand, all_species, pars, bin_w,
+                              integration_method = ctrl$integration_method,
+                              n_gl               = ctrl$n_gl)
 
   # Static competitors: save initial Nvec, never update
   static_nvec <- nvec_list[static_comp]

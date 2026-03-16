@@ -52,7 +52,9 @@ lambda <- function(mod, pars, stand, env, ctrl = NULL) {
   # Observed tree sizes determine the distribution.
   all_species <- union(stand$species, focal_species)
 
-  nvec_list <- .stand_to_nvec(stand, all_species, pars, bin_w)
+  nvec_list <- .stand_to_nvec(stand, all_species, pars, bin_w,
+                              integration_method = ctrl$integration_method,
+                              n_gl               = ctrl$n_gl)
 
   # Compute lambda only for focal species
   lambdas <- purrr::map_dbl(

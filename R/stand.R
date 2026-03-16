@@ -122,7 +122,8 @@ summary.ipm_stand <- function(object, ...) {
 # Internal: build nvec_list (species -> list(N_con, N_het)) from a stand object.
 # Mirrors the approach in lambda(): uses dbh_to_sizeDist to bin observed tree
 # sizes into the species mesh. N_het pools all trees that are not conspecific.
-.stand_to_nvec <- function(stand, species, pars, bin_w) {
+.stand_to_nvec <- function(stand, species, pars, bin_w,
+                           integration_method = "midpoint", n_gl = 50L) {
   lapply(stats::setNames(species, species), function(sp) {
     sp_pars     <- pars$species_params[[sp]]$fixed
     sp_trees    <- stand$trees$size_mm[stand$trees$species_id == sp]
@@ -136,12 +137,46 @@ summary.ipm_stand <- function(object, ...) {
       500L
     }
 
-    m      <- max(1L, as.integer(ceiling((lmax - 127) / bin_w)))
-    msh    <- 127 + ((seq_len(m)) - 0.5) * bin_w
-    N_zero <- list(meshpts = msh, Nvec = rep(0.0, m), h = bin_w)
+    if (integration_method == "gauss-legendre") {
+      gl      <- .gl_nodes_weights(n_gl, a = 127, b = lmax)
+      msh     <- gl$nodes
+      wts     <- gl$weights
+      m       <- n_gl
+      N_zero  <- list(meshpts = msh, Nvec = rep(0.0, m), h = NA_real_, weights = wts)
 
-    N_con <- if (length(sp_trees)    > 0) dbh_to_sizeDist(sp_trees,    N_zero) else N_zero
-    N_het <- if (length(other_trees) > 0) dbh_to_sizeDist(other_trees, N_zero) else N_zero
+      # Bin observed trees into nearest GL node using which.min distance
+      bin_to_gl <- function(sizes) {
+        vapply(sizes, function(sz) which.min(abs(msh - sz)), integer(1L))
+      }
+
+      N_con <- if (length(sp_trees) > 0) {
+        nvec        <- N_zero
+        bins        <- bin_to_gl(sp_trees)
+        nvec$Nvec   <- tabulate(bins, nbins = m) * 1.0
+        nvec
+      } else {
+        N_zero
+      }
+
+      N_het <- if (length(other_trees) > 0) {
+        nvec        <- N_zero
+        bins        <- bin_to_gl(other_trees)
+        nvec$Nvec   <- tabulate(bins, nbins = m) * 1.0
+        nvec
+      } else {
+        N_zero
+      }
+
+    } else {
+      # Midpoint rule (default)
+      m      <- max(1L, as.integer(ceiling((lmax - 127) / bin_w)))
+      msh    <- 127 + ((seq_len(m)) - 0.5) * bin_w
+      wts    <- rep(bin_w, m)
+      N_zero <- list(meshpts = msh, Nvec = rep(0.0, m), h = bin_w, weights = wts)
+
+      N_con <- if (length(sp_trees)    > 0) dbh_to_sizeDist(sp_trees,    N_zero) else N_zero
+      N_het <- if (length(other_trees) > 0) dbh_to_sizeDist(other_trees, N_zero) else N_zero
+    }
 
     list(N_con = N_con, N_het = N_het)
   })
@@ -191,16 +226,28 @@ print.ipm_projection <- function(x, ...) {
     other_sp <- setdiff(names(nvec_list), sp)
     N_con    <- nvec_list[[sp]]$N_con
     m        <- length(N_con$meshpts)
-    breaks   <- N_con$meshpts[1L] - N_con$h / 2 + (0:m) * N_con$h
+
+    # Determine binning approach: midpoint (h is scalar) or GL (h is NA, use which.min)
+    use_gl <- is.na(N_con$h)
+
+    if (!use_gl) {
+      # Midpoint rule: compute uniform bin breaks
+      breaks <- N_con$meshpts[1L] - N_con$h / 2 + (0:m) * N_con$h
+    }
 
     N_het      <- N_con
     N_het$Nvec <- if (length(other_sp) == 0) {
       rep(0.0, m)
     } else {
       Reduce(`+`, lapply(other_sp, function(s) {
-        comp    <- nvec_list[[s]]$N_con
-        bins    <- pmax(1L, pmin(findInterval(comp$meshpts, breaks), m))
-        out     <- numeric(m)
+        comp <- nvec_list[[s]]$N_con
+        out  <- numeric(m)
+        if (use_gl) {
+          # GL mesh: assign each competitor node to nearest focal node
+          bins <- vapply(comp$meshpts, function(pt) which.min(abs(N_con$meshpts - pt)), integer(1L))
+        } else {
+          bins <- pmax(1L, pmin(findInterval(comp$meshpts, breaks), m))
+        }
         for (i in seq_along(bins)) out[bins[i]] <- out[bins[i]] + comp$Nvec[i]
         out
       }))
