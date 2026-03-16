@@ -5,3 +5,7 @@ getEigenValues <- function(M) {
     .Call(`_forestIPM_getEigenValues`, M)
 }
 
+getJacobiEigen <- function(beta) {
+    .Call(`_forestIPM_getJacobiEigen`, beta)
+}
+

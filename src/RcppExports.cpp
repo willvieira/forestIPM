@@ -22,9 +22,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getJacobiEigen
+Rcpp::List getJacobiEigen(Eigen::VectorXd beta);
+RcppExport SEXP _forestIPM_getJacobiEigen(SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(getJacobiEigen(beta));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_forestIPM_getEigenValues", (DL_FUNC) &_forestIPM_getEigenValues, 1},
+    {"_forestIPM_getJacobiEigen", (DL_FUNC) &_forestIPM_getJacobiEigen, 1},
     {NULL, NULL, 0}
 };
 
