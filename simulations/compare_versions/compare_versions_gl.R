@@ -26,13 +26,13 @@ library(tidyverse)
 # ============================================================
 SIM_DIR      <- "simulations/covariates_perturbation"
 DATA_DIR     <- readLines("_data.path")
-REPLICATIONS <- 10L          # fewer draws than compare_versions.R: we care about
-                              # quadrature accuracy, not sensitivity averaging
+REPLICATIONS <- 100L         # must match reference to get identical parameter draws
+                              # (slice_sample RNG consumption depends on n)
 PERTURBATION <- 0.01
 MISSING_IDS  <- c(32794L, 33256L, 33257L, 171478L, 195665L, 201283L)
 GL_SIZES     <- c(20L, 50L, 100L, 200L, 500L)
 MIDPT_TOL    <- 1e-10        # expected tolerance for midpoint (from compare_versions.R)
-GL_TOL       <- 1e-3         # acceptable GL deviation from reference
+GL_TOL       <- 1e-4         # acceptable GL deviation from reference
 
 
 # ============================================================
