@@ -299,39 +299,19 @@ cat(sprintf("  midpt  : %d/%d PASS  max_dev = %.2e  (tol=%g)\n",
 # ============================================================
 # 9. Benchmark: midpoint (h=1) vs GL(50, 100, 150)
 #
-# Uses one draw from row 1 (ABIBAL) — representative cold-climate
-# single-species case. Times the full per-replication loop:
-#   mesh setup + mkKernel + getEigenValues
-# Runs BENCH_REPS outer iterations; reports median, min, and
-# speedup relative to midpoint.
+# Runs for two species chosen to bracket the mesh-size range:
+#   PINBAN — smallest fitted species (fewest midpoint bins)
+#   QUERUB — largest fitted species (most midpoint bins)
+# Uses the first non-missing row for each species in sim_pars_all.
+# Times the full per-draw loop: mesh setup + mkKernel + getEigenValues.
+# Runs BENCH_REPS outer iterations; reports median, min, max, and
+# speedup relative to midpoint for that species.
 # ============================================================
 cat("\n=== TIMING BENCHMARK: midpoint (h=1) vs GL ===\n")
 
-BENCH_REPS  <- 30L
-BENCH_GL    <- c(50L, 100L, 150L)
-BENCH_ROW   <- 1L
-
-bsim  <- sim_pars_all[BENCH_ROW, ]
-bsp   <- bsim$species_id
-btemp <- scale_vars(bsim$bio_01_mean, "temp", "scale")
-bprec <- scale_vars(bsim$bio_12_mean, "prec", "scale")
-
-set.seed(BENCH_ROW)
-bpop <- pop_pars_all |>
-  filter(species_id == bsp) |>
-  select(!species_id) |>
-  slice_sample(n = REPLICATIONS)
-
-bplot <- readRDS(file.path(SIM_DIR, "plot_parameters", paste0(bsp, ".RDS"))) |>
-  filter(plot_id == bsim$plot_id, year_measured == bsim$year_measured) |>
-  pull(plot_pars)
-bplot <- bplot[[1]]
-
-# Pre-build parameter list for draw 1 (fixed across methods)
-bpars  <- pars_to_list(bpop[1L, ])
-bre    <- bplot[1L, ] |> unlist() |> unname()
-bcon_dbh <- unlist(bsim$con_dbh)
-bhet_dbh <- unlist(bsim$het_dbh)
+BENCH_REPS <- 30L
+BENCH_GL   <- c(50L, 100L, 150L)
+BENCH_SPS  <- c("PINBAN", "QUERUB")   # short-form species IDs (suffix match)
 
 # Benchmark helper: time a no-argument function over n reps, return seconds
 bench_fn <- function(fn, n = BENCH_REPS) {
@@ -344,41 +324,71 @@ bench_fn <- function(fn, n = BENCH_REPS) {
   times
 }
 
-# Midpoint (h=1)
-N_ref_mp  <- init_pop_midpt(bpars)
-N_con_mp  <- dbh_to_sizeDist(bcon_dbh, N_ref_mp)
-N_het_mp  <- dbh_to_sizeDist(bhet_dbh, N_ref_mp)
-cat(sprintf("  midpoint mesh size : %d bins\n", length(N_ref_mp$meshpts)))
+for (bench_sp_short in BENCH_SPS) {
+  # Find first non-missing row whose species_id ends with bench_sp_short
+  sp_rows <- which(endsWith(sim_pars_all$species_id, bench_sp_short) &
+                   !seq_len(nrow(sim_pars_all)) %in% MISSING_IDS)
+  if (length(sp_rows) == 0L) {
+    cat(sprintf("\n  %s: no rows found — skipping\n", bench_sp_short))
+    next
+  }
+  bench_row <- sp_rows[1L]
+  bsim <- sim_pars_all[bench_row, ]
+  bsp  <- bsim$species_id
 
-t_midpt <- bench_fn(function() {
-  N_ref <- init_pop_midpt(bpars)
-  N_con <- dbh_to_sizeDist(bcon_dbh, N_ref)
-  N_het <- dbh_to_sizeDist(bhet_dbh, N_ref)
-  getEigenValues(mkKernel(N_con, N_het, 1, bsim$plot_size, btemp, bprec, bpars, bre)$K)
-})
+  btemp <- scale_vars(bsim$bio_01_mean, "temp", "scale")
+  bprec <- scale_vars(bsim$bio_12_mean, "prec", "scale")
 
-# GL sizes
-t_gl <- lapply(BENCH_GL, function(n_gl) {
-  cat(sprintf("  GL(%d) mesh size   : %d nodes\n", n_gl, n_gl))
-  bench_fn(function() {
-    N_ref <- init_pop_gl(bpars, n_gl = n_gl)
-    N_con <- dbh_to_sizeDist_gl(bcon_dbh, N_ref)
-    N_het <- dbh_to_sizeDist_gl(bhet_dbh, N_ref)
+  set.seed(bench_row)
+  bpop <- pop_pars_all |>
+    filter(species_id == bsp) |>
+    select(!species_id) |>
+    slice_sample(n = REPLICATIONS)
+
+  bplot <- readRDS(file.path(SIM_DIR, "plot_parameters", paste0(bsp, ".RDS"))) |>
+    filter(plot_id == bsim$plot_id, year_measured == bsim$year_measured) |>
+    pull(plot_pars)
+  bplot <- bplot[[1]]
+
+  bpars    <- pars_to_list(bpop[1L, ])
+  bre      <- bplot[1L, ] |> unlist() |> unname()
+  bcon_dbh <- unlist(bsim$con_dbh)
+  bhet_dbh <- unlist(bsim$het_dbh)
+
+  # Midpoint mesh size for context
+  N_ref_mp <- init_pop_midpt(bpars)
+  n_midpt  <- length(N_ref_mp$meshpts)
+
+  cat(sprintf("\n--- %s (row %d) --- midpoint bins: %d\n", bench_sp_short, bench_row, n_midpt))
+
+  t_midpt <- bench_fn(function() {
+    N_ref <- init_pop_midpt(bpars)
+    N_con <- dbh_to_sizeDist(bcon_dbh, N_ref)
+    N_het <- dbh_to_sizeDist(bhet_dbh, N_ref)
     getEigenValues(mkKernel(N_con, N_het, 1, bsim$plot_size, btemp, bprec, bpars, bre)$K)
   })
-})
 
-cat(sprintf("\n%-14s %8s %8s %8s %10s\n", "method", "median_s", "min_s", "max_s", "speedup"))
-cat(strrep("-", 52), "\n")
+  t_gl <- lapply(BENCH_GL, function(n_gl) {
+    bench_fn(function() {
+      N_ref <- init_pop_gl(bpars, n_gl = n_gl)
+      N_con <- dbh_to_sizeDist_gl(bcon_dbh, N_ref)
+      N_het <- dbh_to_sizeDist_gl(bhet_dbh, N_ref)
+      getEigenValues(mkKernel(N_con, N_het, 1, bsim$plot_size, btemp, bprec, bpars, bre)$K)
+    })
+  })
 
-midpt_med <- median(t_midpt)
-cat(sprintf("%-14s %8.4f %8.4f %8.4f %10s\n",
-            "midpoint(h=1)", midpt_med, min(t_midpt), max(t_midpt), "1.0x"))
+  cat(sprintf("%-14s %8s %8s %8s %10s\n", "method", "median_s", "min_s", "max_s", "speedup"))
+  cat(strrep("-", 52), "\n")
 
-for (j in seq_along(BENCH_GL)) {
-  med <- median(t_gl[[j]])
-  cat(sprintf("%-14s %8.4f %8.4f %8.4f %9.1fx\n",
-              sprintf("GL(%d)", BENCH_GL[j]),
-              med, min(t_gl[[j]]), max(t_gl[[j]]),
-              midpt_med / med))
+  midpt_med <- median(t_midpt)
+  cat(sprintf("%-14s %8.4f %8.4f %8.4f %10s\n",
+              "midpoint(h=1)", midpt_med, min(t_midpt), max(t_midpt), "1.0x"))
+
+  for (j in seq_along(BENCH_GL)) {
+    med <- median(t_gl[[j]])
+    cat(sprintf("%-14s %8.4f %8.4f %8.4f %9.1fx\n",
+                sprintf("GL(%d)", BENCH_GL[j]),
+                med, min(t_gl[[j]]), max(t_gl[[j]]),
+                midpt_med / med))
+  }
 }
