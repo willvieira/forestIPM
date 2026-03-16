@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 Phase: 7 of 7 (Add GitHub Actions CI with code coverage and pkgdown site with README pointing to book vignettes)
 Plan: 2 of 3 in current phase — COMPLETE (07-02 executed; 07-01 and 07-03 also complete)
 Status: Phase 7 plan 02 complete — _pkgdown.yml and pkgdown.yaml GitHub Actions workflow created
-Last activity: 2026-03-14 — Plan 07-02 executed (pkgdown site config and GitHub Actions workflow created)
+Last activity: 2026-03-16 - Completed quick task 260316-igl: Implement Gauss-Legendre integration for IPM kernel discretization replacing midpoint rule
 
 Progress: [████████░░] 75%
 
@@ -125,6 +125,12 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 None yet.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260316-igl | Implement Gauss-Legendre integration for IPM kernel discretization replacing midpoint rule | 2026-03-16 | 6d0809e | Verified | [260316-igl-implement-gauss-legendre-integration-for](./quick/260316-igl-implement-gauss-legendre-integration-for/) |
 
 ### Blockers/Concerns
 
