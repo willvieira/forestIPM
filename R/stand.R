@@ -123,7 +123,7 @@ summary.ipm_stand <- function(object, ...) {
 # Mirrors the approach in lambda(): uses dbh_to_sizeDist to bin observed tree
 # sizes into the species mesh. N_het pools all trees that are not conspecific.
 .stand_to_nvec <- function(stand, species, pars, bin_w,
-                           integration_method = "midpoint", n_gl = 50L) {
+                           integration_method = "gauss-legendre", n_gl = 100L) {
   lapply(stats::setNames(species, species), function(sp) {
     sp_pars     <- pars$species_params[[sp]]$fixed
     sp_trees    <- stand$trees$size_mm[stand$trees$species_id == sp]

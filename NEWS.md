@@ -1,10 +1,10 @@
 # forestIPM (development version)
 
-## New features
+# forestIPM 1.0.1
 
-* New `integration_method` argument in `control()` — choose between `"midpoint"` (default, backward-compatible) and `"gauss-legendre"` (Gauss-Legendre) quadrature for IPM kernel discretization. GL quadrature achieves higher accuracy with fewer mesh points for smooth integrands.
+* New `integration_method` argument in `control()` — choose between `"midpoint"` and `"gauss-legendre"` (default) quadrature for IPM kernel discretization. GL quadrature achieves higher accuracy with fewer mesh points for smooth integrands.
 
-* New `n_gl` argument in `control()` — sets the number of Gauss-Legendre quadrature nodes (default 50).
+* New `n_gl` argument in `control()` — sets the number of Gauss-Legendre quadrature nodes (default 100).
 
 * GL quadrature uses the Golub-Welsch algorithm (eigendecomposition of the symmetric tridiagonal Jacobi matrix) to compute nodes and weights — no external dependencies, implemented in base R `eigen()`.
 
