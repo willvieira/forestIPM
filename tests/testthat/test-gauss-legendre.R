@@ -61,16 +61,15 @@ test_that(".stand_to_nvec with integration_method='midpoint' (default) returns w
   expect_equal(nvec$ABIBAL$N_con$weights, rep(bin_w, m))
 })
 
-test_that("control(integration_method='gauss-legendre', n_gl=50) stores both fields; default is 'midpoint'", {
+test_that("control(integration_method='gauss-legendre', n_gl=100) stores both fields; default is 'gauss-legendre'", {
   # Default
   ctrl_default <- control(years = 5, progress = FALSE)
-  expect_equal(ctrl_default$integration_method, "midpoint")
-  expect_equal(ctrl_default$n_gl, 50L)
+  expect_equal(ctrl_default$integration_method, "gauss-legendre")
+  expect_equal(ctrl_default$n_gl, 100L)
 
   # GL method
-  ctrl_gl <- control(years = 5, integration_method = "gauss-legendre", n_gl = 100L, progress = FALSE)
-  expect_equal(ctrl_gl$integration_method, "gauss-legendre")
-  expect_equal(ctrl_gl$n_gl, 100L)
+  ctrl_gl <- control(years = 5, integration_method = "midpoint", progress = FALSE)
+  expect_equal(ctrl_gl$integration_method, "midpoint")
   expect_s3_class(ctrl_gl, "ipm_control")
 })
 
