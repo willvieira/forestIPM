@@ -37,5 +37,5 @@ reference:
 
 template:
   bootstrap: 5
-  params:
-    highlightcss: false
+  bslib:
+    primary: "#22794d"
