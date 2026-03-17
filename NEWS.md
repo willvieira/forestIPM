@@ -1,5 +1,19 @@
 # forestIPM (development version)
 
+## New features
+
+* New `integration_method` argument in `control()` — choose between `"midpoint"` (default, backward-compatible) and `"gauss-legendre"` (Gauss-Legendre) quadrature for IPM kernel discretization. GL quadrature achieves higher accuracy with fewer mesh points for smooth integrands.
+
+* New `n_gl` argument in `control()` — sets the number of Gauss-Legendre quadrature nodes (default 50).
+
+* GL quadrature uses the Golub-Welsch algorithm (eigendecomposition of the symmetric tridiagonal Jacobi matrix) to compute nodes and weights — no external dependencies, implemented in base R `eigen()`.
+
+## Improvements
+
+* `mkKernel()` now uses per-column weight vectors (`weights * kernel_column`) instead of uniform `h * matrix(...)` scaling. For midpoint integration the result is identical; for GL quadrature the non-uniform weights are applied correctly.
+
+* Replaced base R `eigen()` with C++ `Eigen::SelfAdjointEigenSolver` via RcppEigen for the Golub-Welsch eigendecomposition — faster node/weight computation for large `n_gl` values.
+
 # forestIPM 1.0.0
 
 Initial release of **forestIPM** — a Bayesian hierarchical Integral Projection Model (IPM)
