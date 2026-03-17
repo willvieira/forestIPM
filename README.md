@@ -8,7 +8,7 @@ It combines growth, survival, and recruitment models, each parameterized as a fu
 The package provides two engines to compute population growth rates ($\lambda$) for 31 tree species and to simulate plot-level community dynamics over time.
 
 This framework enables users to explore how demographic processes scale up to community patterns.
-More broadly, `{forestIPM}` can be used to investigate the effects of climate warming on tree performance, [evaluate the sensitivity of $\lambda$ to climate and competition](https://willvieira.github.io/ms_forest-ipm-sensitivity/), examine [how stochastic $\lambda$ influences species range limits](https://willvieira.github.io/ms_forest-suitable-probability/), provides a foundation for studying the mechanisms driving species coexistence, and many more.
+More broadly, `{forestIPM}` can be used to investigate the effects of climate warming on tree performance, evaluate the sensitivity of $\lambda$ to climate and competition ([📄](https://willvieira.github.io/ms_forest-ipm-sensitivity/)), examine how stochastic $\lambda$ influences species range limits ([📄](https://willvieira.github.io/ms_forest-suitable-probability/)), provides a foundation for studying the mechanisms driving species coexistence, and many more.
 
 ## Documentation
 
