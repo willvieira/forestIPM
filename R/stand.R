@@ -129,13 +129,7 @@ summary.ipm_stand <- function(object, ...) {
     sp_trees    <- stand$trees$size_mm[stand$trees$species_id == sp]
     other_trees <- stand$trees$size_mm[stand$trees$species_id != sp]
 
-    lmax <- if (!is.null(sp_pars) && !is.null(sp_pars$growth)) {
-      ceiling(sp_pars$growth[["Lmax"]])
-    } else if (length(sp_trees) > 0) {
-      ceiling(max(sp_trees)) + bin_w * 5L
-    } else {
-      500L
-    }
+    lmax <- ceiling(sp_pars$growth[["Lmax"]])
 
     if (integration_method == "gauss-legendre") {
       gl      <- .gl_nodes_weights(n_gl, a = 127, b = lmax)
