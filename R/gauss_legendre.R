@@ -1,16 +1,16 @@
-#' Compute Gauss-Legendre quadrature nodes and weights on [a, b]
+#' Compute Gauss-Legendre quadrature nodes and weights on \code{[a, b]}
 #'
 #' Uses the Golub-Welsch algorithm: constructs the symmetric tridiagonal
-#' Jacobi matrix for Legendre polynomials on [-1, 1], decomposes it via
+#' Jacobi matrix for Legendre polynomials on \code{[-1, 1]}, decomposes it via
 #' \code{getJacobiEigen()} (RcppEigen \code{SelfAdjointEigenSolver}), then
-#' maps the result to the interval [a, b].
+#' maps the result to the interval \code{[a, b]}.
 #'
 #' @param n Positive integer. Number of quadrature nodes.
 #' @param a Numeric. Left endpoint of integration interval.
 #' @param b Numeric. Right endpoint of integration interval.
 #' @return A named list with two numeric vectors:
 #'   \describe{
-#'     \item{\code{nodes}}{Quadrature nodes on [a, b], sorted ascending.}
+#'     \item{\code{nodes}}{Quadrature nodes on \code{[a, b]}, sorted ascending.}
 #'     \item{\code{weights}}{Corresponding quadrature weights (positive, sum to b - a).}
 #'   }
 #' @keywords internal

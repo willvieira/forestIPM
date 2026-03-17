@@ -2,7 +2,7 @@
 % Please edit documentation in R/gauss_legendre.R
 \name{.gl_nodes_weights}
 \alias{.gl_nodes_weights}
-\title{Compute Gauss-Legendre quadrature nodes and weights on \link{a, b}}
+\title{Compute Gauss-Legendre quadrature nodes and weights on \code{[a, b]}}
 \usage{
 .gl_nodes_weights(n, a, b)
 }
@@ -16,14 +16,14 @@
 \value{
 A named list with two numeric vectors:
 \describe{
-\item{\code{nodes}}{Quadrature nodes on \link{a, b}, sorted ascending.}
+\item{\code{nodes}}{Quadrature nodes on \code{[a, b]}, sorted ascending.}
 \item{\code{weights}}{Corresponding quadrature weights (positive, sum to b - a).}
 }
 }
 \description{
 Uses the Golub-Welsch algorithm: constructs the symmetric tridiagonal
-Jacobi matrix for Legendre polynomials on \link{-1, 1}, decomposes it via
+Jacobi matrix for Legendre polynomials on \code{[-1, 1]}, decomposes it via
 \code{getJacobiEigen()} (RcppEigen \code{SelfAdjointEigenSolver}), then
-maps the result to the interval \link{a, b}.
+maps the result to the interval \code{[a, b]}.
 }
 \keyword{internal}
