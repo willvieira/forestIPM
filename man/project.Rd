@@ -2,7 +2,7 @@
 % Please edit documentation in R/project.R
 \name{project}
 \alias{project}
-\title{Project population dynamics over time}
+\title{Project population or community dynamics over time}
 \usage{
 project(mod, pars, stand, env, ctrl)
 }
@@ -24,7 +24,7 @@ An object of S3 class \code{"ipm_projection"} with fields:
 size distribution per species at that timestep), \code{$summary}.
 }
 \description{
-Project population dynamics over time
+Project population or community dynamics over time
 }
 \examples{
 df <- data.frame(size_mm = c(150, 200, 350),

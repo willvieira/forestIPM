@@ -6,7 +6,7 @@ navbar:
     right: [book, github]
   components:
     book:
-      text: "Book"
+      text: "IPM Book"
       href: https://willvieira.github.io/book_forest-demography-IPM/
 
 reference:
