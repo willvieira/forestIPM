@@ -62,7 +62,7 @@ validate_ipm_control <- function(x) {
   x
 }
 
-#' Configure IPM projection settings
+#' Configure IPM lambda and project engine settings
 #'
 #' @param years Positive integer. Number of simulation timesteps. Default 100.
 #' @param delta_time Positive numeric. Duration of each timestep in years. Default 1.

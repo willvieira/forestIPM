@@ -1,4 +1,4 @@
-#' Project population or community dynamics over time
+#' Project population or community dynamics through time
 #'
 #' @param mod An \code{ipm_spModel} object.
 #' @param pars An \code{ipm_parameters} object.

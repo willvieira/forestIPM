@@ -2,7 +2,7 @@
 % Please edit documentation in R/control.R
 \name{control}
 \alias{control}
-\title{Configure IPM projection settings}
+\title{Configure IPM lambda and project engine settings}
 \usage{
 control(
   years = 100,
@@ -43,7 +43,7 @@ Default 100.}
 An object of S3 class \code{"ipm_control"}.
 }
 \description{
-Configure IPM projection settings
+Configure IPM lambda and project engine settings
 }
 \examples{
 ctrl <- control(years = 10, compute_lambda = TRUE, progress = FALSE)
