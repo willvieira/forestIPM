@@ -10,7 +10,9 @@ control(
   store_every = 1,
   bin_width = 1,
   compute_lambda = FALSE,
-  progress = TRUE
+  progress = TRUE,
+  integration_method = "gauss-legendre",
+  n_gl = 100L
 )
 }
 \arguments{
@@ -28,6 +30,14 @@ only population structure is needed). Default FALSE}
 
 \item{progress}{Logical. Whether to display a progress bar during projection.
 Default TRUE.}
+
+\item{integration_method}{Character. Integration method for kernel discretization.
+One of \code{"midpoint"} (uniform midpoint rule)
+or \code{"gauss-legendre"} (Default; Gauss-Legendre quadrature, higher accuracy).}
+
+\item{n_gl}{Positive integer. Number of Gauss-Legendre nodes when
+\code{integration_method = "gauss-legendre"}. Ignored for \code{"midpoint"}.
+Default 100.}
 }
 \value{
 An object of S3 class \code{"ipm_control"}.
