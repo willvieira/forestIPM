@@ -19,8 +19,16 @@ A complete description of the methodology, ranging from fitting hierarchical Bay
 ## Basic usage
 
 The package website provides the [function reference](https://willvieira.github.io/forestIPM/reference/index.html).
-The workflow is structured around 5 constructor functions used to define the key components of the model: forest **stand**, **environment**, **species**-, and **control**-parameters.
-These components are then passed to two main IPM engines: **lambda**, which computes species-specific population growth rates, and **project**, which simulates community dynamics through time.
+The workflow is structured around 5 constructor functions used to define the key components of the model:
+- `stand()` representing a forest plot
+- `species_model()` defining which species to model
+- `env_condition()` specifying climate drivers
+- `parameters()` defining a single reproducible parameter realization from Bayesian posteriors
+- `control()` Configure IPM projection settings
+
+These components are then passed to two main IPM engines:
+- `lambda()` computing population growth rate (lambda) per species
+- `project()` projecting population or community dynamics through time
 
 ## Installation
 
