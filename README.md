@@ -30,6 +30,8 @@ These components are then passed to two main IPM engines:
 - `lambda()` computing population growth rate (lambda) per species
 - `project()` projecting population or community dynamics through time
 
+For a step-by-step introduction to the package, see the [Get Started](https://willvieira.github.io/book_forest-demography-IPM/guide_IPM.html) vignette in the IPM Book.
+
 ## Installation
 
 ```r
