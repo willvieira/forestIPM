@@ -94,8 +94,8 @@ lambda <- function(mod, pars, stand, env, ctrl = NULL) {
       draw_type = pars$draw_type,
       draw      = pars$draw,
       seed      = pars$seed,
-      MAT       = if (is.function(env$MAT)) "function(t)" else env$MAT,
-      MAP       = if (is.function(env$MAP)) "function(t)" else env$MAP
+      MAT       = env$MAT,
+      MAP       = env$MAP
     )
   )
 }
@@ -127,8 +127,8 @@ summary.ipm_lambda <- function(object, ...) {
       random       = sprintf("random (id=%d, seed=%d)", cond$draw, cond$seed),
       user_defined = sprintf("draw=%d", cond$draw)
     )
-    mat_str <- if (is.character(cond$MAT)) cond$MAT else sprintf("%.1f\u00b0C", cond$MAT)
-    map_str <- if (is.character(cond$MAP)) cond$MAP else sprintf("%.0f mm/yr", cond$MAP)
+    mat_str <- if (is.function(cond$MAT)) "function(t)" else sprintf("%.1f\u00b0C", cond$MAT)
+    map_str <- if (is.function(cond$MAP)) "function(t)" else sprintf("%.0f mm/yr", cond$MAP)
     cat(sprintf("  Parameters: %s\n", draw_str))
     cat(sprintf("  Climate: MAT=%s  MAP=%s\n", mat_str, map_str))
   }
