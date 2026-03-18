@@ -38,7 +38,7 @@ validate_ipm_parameters <- function(x) {
 #'
 #' @param mod An \code{ipm_spModel} object.
 #' @param draw Character \code{"mean"} or \code{"random"}, or a positive integer
-#'   1-1000 selecting a specific posterior draw index.
+#'   1-2000 selecting a specific posterior draw index.
 #' @param seed Integer or NULL. Random seed. When \code{draw = "random"} and
 #'   \code{seed = NULL}, a seed is auto-generated so the draw is reproducible.
 #'   Retrieve it from \code{$seed} on the returned object.
@@ -46,7 +46,7 @@ validate_ipm_parameters <- function(x) {
 #' @examples
 #' df <- data.frame(size_mm = c(150, 200, 350),
 #'                  species_id = "ABIBAL",
-#'                  plot_size  = 1000)
+#'                  plot_size  = 400)
 #' s    <- stand(df)
 #' mod  <- species_model(s)
 #' pars <- parameters(mod, draw = "mean")

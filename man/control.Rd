@@ -5,39 +5,44 @@
 \title{Configure IPM lambda and project engine settings}
 \usage{
 control(
-  years = 100,
   delta_time = 1,
+  years = 100,
   store_every = 1,
-  bin_width = 1,
-  compute_lambda = FALSE,
+  compute_lambda = TRUE,
   progress = TRUE,
   integration_method = "gauss-legendre",
-  n_gl = 100L
+  n_gl = 200L,
+  bin_width = 1
 )
 }
 \arguments{
-\item{years}{Positive integer. Number of simulation timesteps. Default 100.}
-
 \item{delta_time}{Positive numeric. Duration of each timestep in years. Default 1.}
 
-\item{store_every}{Positive integer. Store stand state every N timesteps. Default 1.}
+\item{years}{Positive integer. Number of simulation timesteps. Used
+only for \code{project()} engine. Default 100.}
 
-\item{bin_width}{Positive integer. Bin width for IPM kernel discretization. Default 1.}
+\item{store_every}{Positive integer. Store stand state every N timesteps.
+Used only for \code{project()} engine. Default 1.}
 
-\item{compute_lambda}{Logical. Whether to compute the asymptotic lambda at each
-timestep via eigendecomposition. Set to FALSE to skip (faster projections when
-only population structure is needed). Default FALSE}
+\item{compute_lambda}{Logical. Whether to compute the asymptotic lambda
+at each timestep. Used only for \code{project()} engine. Set to FALSE to
+skip (faster projections when only population structure is needed).
+Default TRUE.}
 
 \item{progress}{Logical. Whether to display a progress bar during projection.
-Default TRUE.}
+Used only for \code{project()} engine. Default TRUE.}
 
 \item{integration_method}{Character. Integration method for kernel discretization.
 One of \code{"midpoint"} (uniform midpoint rule)
 or \code{"gauss-legendre"} (Default; Gauss-Legendre quadrature, higher accuracy).}
 
 \item{n_gl}{Positive integer. Number of Gauss-Legendre nodes when
-\code{integration_method = "gauss-legendre"}. Ignored for \code{"midpoint"}.
-Default 100.}
+\code{integration_method = "gauss-legendre"}. Ignored for
+\code{"midpoint"}. Default 200.}
+
+\item{bin_width}{Positive integer. Bin width for IPM kernel discretization
+when \code{integration_method = "midpoint"}. Ignored for
+\code{"gauss-legendre"}.. Default 1.}
 }
 \value{
 An object of S3 class \code{"ipm_control"}.
@@ -46,6 +51,6 @@ An object of S3 class \code{"ipm_control"}.
 Configure IPM lambda and project engine settings
 }
 \examples{
-ctrl <- control(years = 10, compute_lambda = TRUE, progress = FALSE)
+ctrl <- control(years = 10, compute_lambda = FALSE, progress = FALSE)
 print(ctrl)
 }
