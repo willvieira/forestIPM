@@ -91,11 +91,12 @@ lambda <- function(mod, pars, stand, env, ctrl = NULL) {
     lambdas,
     class      = "ipm_lambda",
     conditions = list(
-      draw_type = pars$draw_type,
-      draw      = pars$draw,
-      seed      = pars$seed,
-      MAT       = env$MAT,
-      MAP       = env$MAP
+      species    = mod$species,
+      on_missing = mod$on_missing,
+      stand      = stand,
+      env        = env,
+      pars       = pars,
+      ctrl       = ctrl
     )
   )
 }
@@ -104,10 +105,10 @@ lambda <- function(mod, pars, stand, env, ctrl = NULL) {
 print.ipm_lambda <- function(x, ...) {
   cond <- attr(x, "conditions")
   draw_str <- if (!is.null(cond)) {
-    switch(cond$draw_type,
+    switch(cond$pars$draw_type,
       mean         = "mean",
-      random       = sprintf("random (id=%d, seed=%d)", cond$draw, cond$seed),
-      user_defined = sprintf("draw=%d", cond$draw)
+      random       = sprintf("random (id=%d, seed=%d)", cond$pars$draw, cond$pars$seed),
+      user_defined = sprintf("draw=%d", cond$pars$draw)
     )
   } else "unknown"
   cat(sprintf("<ipm_lambda>  draw=%s\n", draw_str))
@@ -122,13 +123,13 @@ summary.ipm_lambda <- function(object, ...) {
   cat("<ipm_lambda> summary\n")
   cond <- attr(object, "conditions")
   if (!is.null(cond)) {
-    draw_str <- switch(cond$draw_type,
+    draw_str <- switch(cond$pars$draw_type,
       mean         = "mean",
-      random       = sprintf("random (id=%d, seed=%d)", cond$draw, cond$seed),
-      user_defined = sprintf("draw=%d", cond$draw)
+      random       = sprintf("random (id=%d, seed=%d)", cond$pars$draw, cond$pars$seed),
+      user_defined = sprintf("draw=%d", cond$pars$draw)
     )
-    mat_str <- if (is.function(cond$MAT)) "function(t)" else sprintf("%.1f\u00b0C", cond$MAT)
-    map_str <- if (is.function(cond$MAP)) "function(t)" else sprintf("%.0f mm/yr", cond$MAP)
+    mat_str <- if (is.function(cond$env$MAT)) "function(t)" else sprintf("%.1f\u00b0C", cond$env$MAT)
+    map_str <- if (is.function(cond$env$MAP)) "function(t)" else sprintf("%.0f mm/yr", cond$env$MAP)
     cat(sprintf("  Parameters: %s\n", draw_str))
     cat(sprintf("  Climate: MAT=%s  MAP=%s\n", mat_str, map_str))
   }

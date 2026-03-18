@@ -170,15 +170,11 @@ project <- function(mod, pars, stand, env, ctrl) {
       stand_series = stand_series,
       summary      = tibble::as_tibble(summary_tbl),
       conditions   = list(
-        draw_type   = pars$draw_type,
-        draw        = pars$draw,
-        seed        = pars$seed,
-        MAT         = env$MAT,
-        MAP         = env$MAP,
-        years       = ctrl$years,
-        delta_time  = ctrl$delta_time,
-        store_every = ctrl$store_every,
-        bin_width   = ctrl$bin_width
+        on_missing = mod$on_missing,
+        stand      = stand,
+        env        = env,
+        pars       = pars,
+        ctrl       = ctrl
       )
     ),
     class = "ipm_projection"
@@ -207,13 +203,13 @@ summary.ipm_projection <- function(object, ...) {
   }
   if (!is.null(object$conditions)) {
     cond <- object$conditions
-    draw_str <- switch(cond$draw_type,
+    draw_str <- switch(cond$pars$draw_type,
       mean         = "mean",
-      random       = sprintf("random (id=%d, seed=%d)", cond$draw, cond$seed),
-      user_defined = sprintf("draw=%d", cond$draw)
+      random       = sprintf("random (id=%d, seed=%d)", cond$pars$draw, cond$pars$seed),
+      user_defined = sprintf("draw=%d", cond$pars$draw)
     )
-    mat_str <- if (is.function(cond$MAT)) "function(t)" else sprintf("%.1f\u00b0C", cond$MAT)
-    map_str <- if (is.function(cond$MAP)) "function(t)" else sprintf("%.0f mm/yr", cond$MAP)
+    mat_str <- if (is.function(cond$env$MAT)) "function(t)" else sprintf("%.1f\u00b0C", cond$env$MAT)
+    map_str <- if (is.function(cond$env$MAP)) "function(t)" else sprintf("%.0f mm/yr", cond$env$MAP)
     cat(sprintf("  Parameters: %s\n", draw_str))
     cat(sprintf("  Climate: MAT=%s  MAP=%s\n", mat_str, map_str))
   }
