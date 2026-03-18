@@ -48,11 +48,8 @@ lambda <- function(mod, pars, stand, env, ctrl = NULL) {
   Temp <- if (is.function(env$.MAT_scl)) env$.MAT_scl(0) else env$.MAT_scl
   Prec <- if (is.function(env$.MAP_scl)) env$.MAP_scl(0) else env$.MAP_scl
 
-  # Build size distributions from stand data for ALL species in stand + focal species.
-  # Observed tree sizes determine the distribution.
-  all_species <- union(stand$species, focal_species)
-
-  nvec_list <- .stand_to_nvec(stand, all_species, pars, bin_w,
+  # Build size distributions from stand data for the focal species
+  nvec_list <- .stand_to_nvec(stand, focal_species, pars, bin_w,
                               integration_method = ctrl$integration_method,
                               n_gl               = ctrl$n_gl)
 
