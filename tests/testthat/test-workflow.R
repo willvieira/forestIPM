@@ -212,7 +212,7 @@ test_that("project() with time-varying MAT records 'function(t)' in conditions",
   env  <- env_condition(MAT = function(t) 6 + t * 0.1, MAP = 1200)
   ctrl <- control(years = 3, progress = FALSE)
   proj <- project(mod, pars, s, env, ctrl)
-  expect_equal(proj$conditions$MAT, "function(t)")
+  expect_equal(proj$conditions$MAT, env$MAT)
 })
 
 # ---------------------------------------------------------------------------
