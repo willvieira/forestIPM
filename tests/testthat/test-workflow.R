@@ -164,7 +164,7 @@ test_that("plot(proj, type = 'invalid') raises error", {
 # ---------------------------------------------------------------------------
 # Reproducibility: conditions tracking
 # ---------------------------------------------------------------------------
-test_that("lambda() carries conditions (draw_type, seed, MAT, MAP)", {
+test_that("lambda() carries conditions (pars, env, stand)", {
   s    <- make_abibal_stand()
   mod  <- species_model(s)
   pars <- parameters(mod, draw = "random", seed = 123L)
@@ -172,10 +172,11 @@ test_that("lambda() carries conditions (draw_type, seed, MAT, MAP)", {
   lam  <- lambda(mod, pars, s, env)
   cond <- attr(lam, "conditions")
   expect_false(is.null(cond))
-  expect_equal(cond$draw_type, "random")
-  expect_equal(cond$seed, 123L)
-  expect_equal(cond$MAT, 8)
-  expect_equal(cond$MAP, 1200)
+  expect_equal(cond$pars$draw_type, "random")
+  expect_equal(cond$pars$seed, 123L)
+  expect_equal(cond$env$MAT, 8)
+  expect_equal(cond$env$MAP, 1200)
+  expect_equal(cond$stand, s)
 })
 
 test_that("lambda() with draw = 'mean' carries conditions with seed = NULL", {
@@ -185,11 +186,11 @@ test_that("lambda() with draw = 'mean' carries conditions with seed = NULL", {
   env  <- env_condition(MAT = 8, MAP = 1200)
   lam  <- lambda(mod, pars, s, env)
   cond <- attr(lam, "conditions")
-  expect_equal(cond$draw_type, "mean")
-  expect_null(cond$seed)
+  expect_equal(cond$pars$draw_type, "mean")
+  expect_null(cond$pars$seed)
 })
 
-test_that("project() carries conditions with draw_type, seed, and climate", {
+test_that("project() carries conditions with pars, env, ctrl, and stand", {
   s    <- make_abibal_stand()
   mod  <- species_model(s)
   pars <- parameters(mod, draw = "random", seed = 99L)
@@ -198,21 +199,22 @@ test_that("project() carries conditions with draw_type, seed, and climate", {
   proj <- project(mod, pars, s, env, ctrl)
   cond <- proj$conditions
   expect_false(is.null(cond))
-  expect_equal(cond$draw_type, "random")
-  expect_equal(cond$seed, 99L)
-  expect_equal(cond$MAT, 6)
-  expect_equal(cond$MAP, 900)
-  expect_equal(cond$years, 5L)
+  expect_equal(cond$pars$draw_type, "random")
+  expect_equal(cond$pars$seed, 99L)
+  expect_equal(cond$env$MAT, 6)
+  expect_equal(cond$env$MAP, 900)
+  expect_equal(cond$ctrl$years, 5L)
+  expect_equal(cond$stand, s)
 })
 
-test_that("project() with time-varying MAT records 'function(t)' in conditions", {
+test_that("project() with time-varying MAT records function in conditions", {
   s    <- make_abibal_stand()
   mod  <- species_model(s)
   pars <- parameters(mod, draw = "mean")
   env  <- env_condition(MAT = function(t) 6 + t * 0.1, MAP = 1200)
   ctrl <- control(years = 3, progress = FALSE)
   proj <- project(mod, pars, s, env, ctrl)
-  expect_equal(proj$conditions$MAT, env$MAT)
+  expect_equal(proj$conditions$env$MAT, env$MAT)
 })
 
 # ---------------------------------------------------------------------------
