@@ -195,10 +195,10 @@ print.ipm_projection <- function(x, ...) {
   store_every <- if (length(x$years) > 1) x$years[2] - x$years[1] else 1
   cond <- x$conditions
   draw_str <- if (!is.null(cond)) {
-    switch(cond$draw_type,
+    switch(cond$pars$draw_type,
       mean         = "mean",
-      random       = sprintf("random (id=%d, seed=%d)", cond$draw, cond$seed),
-      user_defined = sprintf("draw=%d", cond$draw),
+      random       = sprintf("random (id=%d, seed=%d)", cond$pars$draw, cond$pars$seed),
+      user_defined = sprintf("draw=%d", cond$pars$draw),
       "unknown"
     )
   } else "unknown"
