@@ -96,3 +96,96 @@ test_that("parameters() returns ipm_parameters with required structure", {
   expect_true("draw_type" %in% names(p))
   expect_true("seed" %in% names(p))
 })
+
+# --- set_random_effects() ---
+
+make_pars <- function() {
+  df  <- data.frame(size_mm = c(150, 200, 300), species_id = "ABIBAL", plot_size = 1000)
+  mod <- species_model(stand(df))
+  parameters(mod, draw = "mean")
+}
+
+test_that("set_random_effects() rejects non-ipm_parameters input", {
+  expect_error(set_random_effects(list(), values = c(0, 0, 0)))
+})
+
+test_that("set_random_effects() with numeric(3) and species=NULL applies to all species", {
+  pars2 <- set_random_effects(make_pars(), values = c(0.1, 0.2, 0.3))
+  expect_equal(pars2$species_params[["ABIBAL"]]$random_effects, c(0.1, 0.2, 0.3))
+})
+
+test_that("set_random_effects() with numeric(3) and specific species applies only to that species", {
+  pars2 <- set_random_effects(make_pars(), values = c(0.5, 0.6, 0.7), species = "ABIBAL")
+  expect_equal(pars2$species_params[["ABIBAL"]]$random_effects, c(0.5, 0.6, 0.7))
+})
+
+test_that("set_random_effects() with named list applies per species", {
+  pars2 <- set_random_effects(make_pars(), values = list(ABIBAL = c(1.0, 2.0, 3.0)))
+  expect_equal(pars2$species_params[["ABIBAL"]]$random_effects, c(1.0, 2.0, 3.0))
+})
+
+test_that("set_random_effects() returns an ipm_parameters object", {
+  pars2 <- set_random_effects(make_pars(), values = c(0, 0, 0))
+  expect_s3_class(pars2, "ipm_parameters")
+})
+
+test_that("set_random_effects() rejects values of wrong length", {
+  expect_error(set_random_effects(make_pars(), values = c(0, 0)))
+  expect_error(set_random_effects(make_pars(), values = c(0, 0, 0, 0)))
+})
+
+test_that("set_random_effects() rejects non-numeric values", {
+  expect_error(set_random_effects(make_pars(), values = c("a", "b", "c")))
+})
+
+test_that("set_random_effects() rejects unknown species in vector path", {
+  expect_error(set_random_effects(make_pars(), values = c(0, 0, 0), species = "FAKESPP"))
+})
+
+test_that("set_random_effects() rejects unknown species in list path", {
+  expect_error(set_random_effects(make_pars(), values = list(FAKESPP = c(0, 0, 0))))
+})
+
+test_that("set_random_effects() with named list rejects wrong-length vector per species", {
+  expect_error(set_random_effects(make_pars(), values = list(ABIBAL = c(0, 0))))
+})
+
+# --- set_random_effects() multi-species ---
+
+make_two_sp_pars <- function() {
+  df <- data.frame(
+    size_mm    = c(150, 200, 300, 180, 250),
+    species_id = c("ABIBAL", "ABIBAL", "ABIBAL", "ACERUB", "ACERUB"),
+    plot_size  = 1000
+  )
+  mod <- species_model(stand(df))
+  parameters(mod, draw = "mean")
+}
+
+test_that("set_random_effects() assigns to only one species, leaving the other NULL", {
+  pars2 <- set_random_effects(make_two_sp_pars(), values = c(0.1, 0.2, 0.3), species = "ABIBAL")
+  expect_equal(pars2$species_params[["ABIBAL"]]$random_effects, c(0.1, 0.2, 0.3))
+  expect_null(pars2$species_params[["ACERUB"]]$random_effects)
+})
+
+test_that("set_random_effects() assigns same values to both species via species=NULL", {
+  pars2 <- set_random_effects(make_two_sp_pars(), values = c(0.5, 0.6, 0.7))
+  expect_equal(pars2$species_params[["ABIBAL"]]$random_effects, c(0.5, 0.6, 0.7))
+  expect_equal(pars2$species_params[["ACERUB"]]$random_effects, c(0.5, 0.6, 0.7))
+})
+
+test_that("set_random_effects() assigns different values per species via named list", {
+  pars2 <- set_random_effects(
+    make_two_sp_pars(),
+    values = list(ABIBAL = c(1.0, 2.0, 3.0), ACERUB = c(4.0, 5.0, 6.0))
+  )
+  expect_equal(pars2$species_params[["ABIBAL"]]$random_effects, c(1.0, 2.0, 3.0))
+  expect_equal(pars2$species_params[["ACERUB"]]$random_effects, c(4.0, 5.0, 6.0))
+})
+
+test_that("set_random_effects() list path rejects unknown second species, leaving valid one unchanged", {
+  pars0 <- make_two_sp_pars()
+  expect_error(
+    set_random_effects(pars0, values = list(ABIBAL = c(1, 2, 3), FAKESPP = c(0, 0, 0)))
+  )
+})
