@@ -234,3 +234,136 @@ test_that("stand() rejects trees below minimum DBH threshold (127mm)", {
   df_small <- data.frame(size_mm = c(100, 120), species_id = "ABIBAL", plot_size = 400)
   expect_error(stand(df_small))
 })
+
+# ---------------------------------------------------------------------------
+# Two-species project() workflow
+# ---------------------------------------------------------------------------
+make_two_sp_stand <- function() {
+  stand(data.frame(
+    size_mm    = c(seq(130, 600, length.out = 8),  seq(150, 550, length.out = 20)),
+    species_id = c(rep("ABIBAL", 8),               rep("ACERUB", 6)),
+    plot_size  = 1000
+  ))
+}
+
+make_two_sp_mod <- function() species_model(make_two_sp_stand())
+
+make_two_sp_pars_wf <- function() parameters(make_two_sp_mod(), draw = "mean")
+
+test_that("`project()` allows single species dynamics - drop on missing", {
+  s    <- make_two_sp_stand()
+  mod  <- species_model("ABIBAL", on_missing = "drop")
+  pars <- parameters(mod, draw = "mean")
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_s3_class(proj, "ipm_projection")
+  expect_setequal(proj$species, c("ABIBAL"))
+})
+
+test_that("`project()` allows single species dynamics - static on missing", {
+  s    <- make_two_sp_stand()
+  mod  <- species_model("ABIBAL", on_missing = "static")
+  pars <- parameters(mod, draw = "mean")
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_s3_class(proj, "ipm_projection")
+  expect_setequal(proj$species, c("ABIBAL"))
+})
+
+test_that("lambda under `static` is larger than on `drop`", {
+  s    <- make_two_sp_stand()
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  mod  <- species_model("ABIBAL", on_missing = "static")
+  pars <- parameters(mod, draw = "mean")
+  proj_comp <- project(mod, pars, s, env, ctrl)
+  mod  <- species_model("ABIBAL", on_missing = "drop")
+  proj_noComp <- project(mod, pars, s, env, ctrl)
+  expect_all_true(proj_comp$lambda$ABIBAL < proj_noComp$lambda$ABIBAL)
+})
+
+test_that("project() with two species returns both in $species", {
+  s    <- make_two_sp_stand()
+  mod  <- make_two_sp_mod()
+  pars <- make_two_sp_pars_wf()
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_s3_class(proj, "ipm_projection")
+  expect_setequal(proj$species, c("ABIBAL", "ACERUB"))
+})
+
+test_that("project() two-species lambda is finite and positive for both species", {
+  s    <- make_two_sp_stand()
+  mod  <- make_two_sp_mod()
+  pars <- make_two_sp_pars_wf()
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_true(all(is.finite(proj$lambda[["ABIBAL"]])))
+  expect_true(all(proj$lambda[["ABIBAL"]] > 0))
+  expect_true(all(is.finite(proj$lambda[["ACERUB"]])))
+  expect_true(all(proj$lambda[["ACERUB"]] > 0))
+})
+
+test_that("project() two-species summary has rows for both species at every timestep", {
+  s    <- make_two_sp_stand()
+  mod  <- make_two_sp_mod()
+  pars <- make_two_sp_pars_wf()
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_true("ABIBAL" %in% proj$summary$species_id)
+  expect_true("ACERUB" %in% proj$summary$species_id)
+  expect_equal(nrow(proj$summary), 2L * length(proj$years))
+})
+
+test_that("project() two-species stand_series snapshots contain both species", {
+  s    <- make_two_sp_stand()
+  mod  <- make_two_sp_mod()
+  pars <- make_two_sp_pars_wf()
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  last_snap <- proj$stand_series[[length(proj$stand_series)]]
+  expect_true("ABIBAL" %in% names(last_snap$distributions))
+  expect_true("ACERUB" %in% names(last_snap$distributions))
+})
+
+test_that("project() two-species with compute_lambda = FALSE returns NA lambda for both", {
+  s    <- make_two_sp_stand()
+  mod  <- make_two_sp_mod()
+  pars <- make_two_sp_pars_wf()
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = FALSE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_true(all(is.na(proj$lambda[["ABIBAL"]])))
+  expect_true(all(is.na(proj$lambda[["ACERUB"]])))
+})
+
+test_that("project() two-species with random effects on one species still produces finite output for both", {
+  s    <- make_two_sp_stand()
+  mod  <- make_two_sp_mod()
+  pars <- set_random_effects(make_two_sp_pars_wf(), values = c(0.1, -0.1, 0.05), species = "ABIBAL")
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_true(all(is.finite(proj$lambda[["ABIBAL"]])))
+  expect_true(all(is.finite(proj$lambda[["ACERUB"]])))
+})
+
+test_that("project() two-species with different random effects per species produces finite output", {
+  s    <- make_two_sp_stand()
+  mod  <- make_two_sp_mod()
+  pars <- set_random_effects(
+    make_two_sp_pars_wf(),
+    values = list(ABIBAL = c(0.1, -0.1, 0.0), ACERUB = c(-0.1, 0.1, 0.0))
+  )
+  env  <- env_condition(MAT = 8, MAP = 1200)
+  ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
+  proj <- project(mod, pars, s, env, ctrl)
+  expect_true(all(is.finite(proj$lambda[["ABIBAL"]])))
+  expect_true(all(is.finite(proj$lambda[["ACERUB"]])))
+})
