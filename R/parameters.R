@@ -81,11 +81,6 @@ parameters <- function(mod, draw = "random", seed = NULL) {
   species_params <- lapply(stats::setNames(mod$species, mod$species), function(sp) {
     sp_data <- mod$params[[sp]]  # list(draws = ..., mean = ...) or NULL
 
-    if (is.null(sp_data)) {
-      # RDS not shipped yet; Phase 3 will add cloud fetch
-      return(list(fixed = NULL, random_effects = NULL))
-    }
-
     if (draw_type == "mean") {
       pars_resolved <- sp_data$mean  # named list of named numeric vectors per vital rate
     } else {
