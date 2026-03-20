@@ -92,7 +92,6 @@ lambda <- function(mod, pars, stand, env, ctrl = NULL) {
     class      = "ipm_lambda",
     conditions = list(
       species    = mod$species,
-      on_missing = mod$on_missing,
       stand      = stand,
       env        = env,
       pars       = pars,

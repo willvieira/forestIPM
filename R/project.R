@@ -59,7 +59,8 @@ project <- function(mod, pars, stand, env, ctrl) {
           "i" = "Set {.code on_missing = \"drop\"} or {.code \"static\"} in {.fn species_model} to handle this."
         ))
       } else if (mod$on_missing == "drop") {
-        stand_only <- setdiff(stand_only, no_pars)
+        # drop species without pars
+        stand <- .stand_drop_species(stand, sp_drop = no_pars)
       } else {  # "static"
         static_comp <- no_pars
       }
@@ -68,19 +69,19 @@ project <- function(mod, pars, stand, env, ctrl) {
 
   warn_env_range(env, mod$species)
 
-  all_species <- c(mod$species, stand_only)
-
-  bin_w      <- ctrl$bin_width
-  delta_time <- ctrl$delta_time
-
   # Build size distributions from stand data
-  nvec_list <- .stand_to_nvec(stand, all_species, pars, bin_w,
-                              integration_method = ctrl$integration_method,
-                              n_gl               = ctrl$n_gl)
+  nvec_list <- .stand_to_nvec(
+    stand, mod$species, pars, ctrl$bin_width,
+    ctrl$integration_method, ctrl$n_gl
+  )
 
-  # Static competitors: save initial Nvec, never update
-  static_nvec <- nvec_list[static_comp]
-
+  # Extract fixed sizes for static competitors that do not change over time
+  static_sizes <- if (length(static_comp) > 0) {
+    s$trees$size_mm[s$trees$species_id %in% static_comp]
+  } else{
+    numeric(0)
+  }
+  
   # Storage
   stored_t     <- integer(0)
   lambda_store <- lapply(stats::setNames(mod$species, mod$species), function(sp) numeric(0))
@@ -100,9 +101,6 @@ project <- function(mod, pars, stand, env, ctrl) {
     Temp <- if (is.function(env$.MAT_scl)) env$.MAT_scl(t) else env$.MAT_scl
     Prec <- if (is.function(env$.MAP_scl)) env$.MAP_scl(t) else env$.MAP_scl
 
-    # Restore static competitor Nvec (unchanged)
-    for (sp in static_comp) nvec_list[[sp]] <- static_nvec[[sp]]
-
     new_nvec_list <- nvec_list
     lambdas_t     <- stats::setNames(rep(NA_real_, length(mod$species)), mod$species)
 
@@ -117,7 +115,7 @@ project <- function(mod, pars, stand, env, ctrl) {
       K_list <- mkKernel(
         Nvec_intra  = nvec_list[[sp]]$N_con,
         Nvec_inter  = nvec_list[[sp]]$N_het,
-        delta_time  = delta_time,
+        delta_time  = ctrl$delta_time,
         plotSize    = stand$plot_size,
         Temp        = Temp,
         Prec        = Prec,
@@ -132,7 +130,7 @@ project <- function(mod, pars, stand, env, ctrl) {
       }
     }
 
-    nvec_list <- .update_N_het(mod$species, new_nvec_list)
+    nvec_list <- .update_N_het(mod$species, new_nvec_list, static_sizes)
 
     if (ctrl$progress) cli::cli_progress_update(id = pb)
 

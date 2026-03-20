@@ -119,6 +119,19 @@ summary.ipm_stand <- function(object, ...) {
   invisible(object)
 }
 
+# Internal: drop one or more species from an ipm_stand object.
+# Returns the same ipm_stand with all individuals of sp_drop removed and
+# $species updated accordingly.
+.stand_drop_species <- function(stand, sp_drop) {
+  keep <- !stand$trees$species_id %in% sp_drop
+  trees_new <- stand$trees[keep, , drop = FALSE]
+  new_ipm_stand(
+    trees     = trees_new,
+    species   = setdiff(stand$species, sp_drop),
+    plot_size = stand$plot_size
+  )
+}
+
 # Internal: build nvec_list (species -> list(N_con, N_het)) from a stand object.
 # Mirrors the approach in lambda(): uses dbh_to_sizeDist to bin observed tree
 # sizes into the species mesh. N_het pools all trees that are not conspecific.
@@ -215,7 +228,7 @@ print.ipm_projection <- function(x, ...) {
 # findInterval on the focal bin boundaries — sizes beyond the focal lmax are
 # accumulated into the last bin so no individuals are lost.
 # Returns the full nvec_list with N_het updated for focal_species.
-.update_N_het <- function(focal_species, nvec_list) {
+.update_N_het <- function(focal_species, nvec_list, static_sizes = numeric(0)) {
   updated <- lapply(stats::setNames(focal_species, focal_species), function(sp) {
     other_sp <- setdiff(names(nvec_list), sp)
     N_con    <- nvec_list[[sp]]$N_con
@@ -229,8 +242,7 @@ print.ipm_projection <- function(x, ...) {
       breaks <- N_con$meshpts[1L] - N_con$h / 2 + (0:m) * N_con$h
     }
 
-    N_het      <- N_con
-    N_het$Nvec <- if (length(other_sp) == 0) {
+    dyn_het <- if (length(other_sp) == 0) {
       rep(0.0, m)
     } else {
       Reduce(`+`, lapply(other_sp, function(s) {
@@ -246,6 +258,22 @@ print.ipm_projection <- function(x, ...) {
         out
       }))
     }
+
+    static_het <- if (length(static_sizes) > 0) {
+      out <- numeric(m)
+      if (use_gl) {
+        bins <- vapply(static_sizes, function(sz) which.min(abs(N_con$meshpts - sz)), integer(1L))
+      } else {
+        bins <- pmax(1L, pmin(findInterval(static_sizes, breaks), m))
+      }
+      for (i in seq_along(bins)) out[bins[i]] <- out[bins[i]] + 1.0
+      out
+    } else {
+      rep(0.0, m)
+    }
+
+    N_het      <- N_con
+    N_het$Nvec <- dyn_het + static_het
     utils::modifyList(nvec_list[[sp]], list(N_het = N_het))
   })
   utils::modifyList(nvec_list, updated)
