@@ -97,11 +97,10 @@ stand <- function(data) {
 
 #' @export
 print.ipm_stand <- function(x, ...) {
-  n_trees   <- nrow(x$trees)
+  total_ba  <- sum(size_to_BAind(x$trees$size_mm)) * 1e4 / x$plot_size
   n_species <- length(x$species)
-  cat(sprintf("<ipm_stand>  %d tree%s | %d species | %.0f m2 plot\n",
-              n_trees, if (n_trees == 1) "" else "s",
-              n_species, x$plot_size))
+  cat(sprintf("<ipm_stand>  %.2f m2/ha BA | %d species | %.0f m2 plot\n",
+              total_ba, n_species, x$plot_size))
   invisible(x)
 }
 
@@ -112,8 +111,9 @@ summary.ipm_stand <- function(object, ...) {
   cat(sprintf("  Species (%d):\n", length(object$species)))
   for (sp in object$species) {
     sp_trees <- object$trees[object$trees$species_id == sp, ]
-    cat(sprintf("    %s: %d trees, size range %.0f-%.0f mm\n",
-                sp, nrow(sp_trees),
+    sp_ba    <- sum(size_to_BAind(sp_trees$size_mm)) * 1e4 / object$plot_size
+    cat(sprintf("    %s: %.2f m2/ha BA, size range %.0f-%.0f mm\n",
+                sp, sp_ba,
                 min(sp_trees$size_mm), max(sp_trees$size_mm)))
   }
   invisible(object)

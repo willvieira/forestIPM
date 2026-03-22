@@ -149,7 +149,7 @@ project <- function(mod, pars, stand, env, ctrl) {
           timestep   = t,
           species_id = sp,
           lambda     = lambdas_t[[sp]],
-          n_trees    = as.integer(round(sum(nvec_list[[sp]]$N_con$Nvec))),
+          basal_area = size_to_BAplot(nvec_list[[sp]]$N_con, stand$plot_size),
           stringsAsFactors = FALSE
         )))
       }
@@ -193,8 +193,8 @@ summary.ipm_projection <- function(object, ...) {
     for (i in seq_len(nrow(final_rows))) {
       row <- final_rows[i, ]
       lam_str <- if (is.na(row$lambda)) "NA" else sprintf("%.4f", row$lambda)
-      cat(sprintf("    %s: lambda=%s, n_trees=%d\n",
-                  row$species_id, lam_str, row$n_trees))
+      cat(sprintf("    %s: lambda=%s, BA=%.2f m2/ha\n",
+                  row$species_id, lam_str, row$basal_area))
     }
   } else {
     cat("  No timesteps stored.\n")
@@ -289,13 +289,13 @@ plot.ipm_projection <- function(x, type = NULL, timestep = NULL, ...) {
       by = c("species_id" = "species_id")
     ) |>
     ggplot() +
-    aes(timestep, n_trees, color = species_name) +
+    aes(timestep, basal_area, color = species_name) +
     geom_line() +
     geom_hline(yintercept = 0, linetype = 2, alpha = 0.4) +
     theme_classic() +
     labs(
       x = "Time",
-      y = "N (population size)",
+      y = "Basal area (m2/ha)",
       color = "Species"
     ) +
     theme(
@@ -357,13 +357,13 @@ plot.ipm_projection <- function(x, type = NULL, timestep = NULL, ...) {
       by = c("species_id" = "species_id")
     ) |>
     ggplot() +
-    aes(n_trees, lambda) +
+    aes(basal_area, lambda) +
     aes(color = species_name) +
     geom_path() +
     geom_hline(yintercept = 1, alpha = 0.2) +
     theme_classic() +
     labs(
-      x = 'Population size',
+      x = "Basal area (m2/ha)",
       y = expression(lambda),
       color = "Species"
     ) +
