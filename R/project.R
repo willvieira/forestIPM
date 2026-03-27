@@ -77,7 +77,7 @@ project <- function(mod, pars, stand, env, ctrl) {
 
   # Extract fixed sizes for static competitors that do not change over time
   static_sizes <- if (length(static_comp) > 0) {
-    s$trees$size_mm[s$trees$species_id %in% static_comp]
+    stand$trees$size_mm[stand$trees$species_id %in% static_comp]
   } else{
     numeric(0)
   }
