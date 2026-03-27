@@ -431,3 +431,172 @@ cat(sprintf(
   "\nOutputs saved to %s/:\n  results_gl_N.RDS\n  table_gl_N_BA.RDS\n  table_gl_deviations.RDS\n",
   OUT_DIR
 ))
+
+
+# ============================================================
+# 10. Single-rep trajectory function
+#     Runs the model to equilibrium for one (array_id, rep)
+#     pair, tracking lambda, N, and BA at every time step
+#     for both midpoint and all GL integration methods.
+#
+# Arguments:
+#   array_id  - row index into sim_pars_all (same as elsewhere)
+#   rep       - integer in 1:REPLICATIONS selecting which
+#               parameter draw to use (uses the same
+#               set.seed(array_id) draw order as compare_row_N)
+#   gl_sizes  - GL node counts to include (default: GL_SIZES)
+#
+# Returns a list:
+#   $array_id, $rep, $species
+#   $traj  - data.frame with columns:
+#              method, n_gl, t, lambda, N, BA
+# ============================================================
+run_rep_trajectory <- function(array_id, rep, gl_sizes = GL_SIZES) {
+
+  # --- simulation covariates ---
+  sim_pars  <- sim_pars_all[array_id, ]
+  Sp        <- sim_pars$species_id
+  plot_size <- sim_pars$plot_size
+  temp_scl  <- scale_vars(sim_pars$bio_01_mean, "temp", "scale")
+  prec_scl  <- scale_vars(sim_pars$bio_12_mean, "prec", "scale")
+
+  # --- parameter draw (reproduce same sample order as compare_row_N) ---
+  set.seed(array_id)
+  pop_pars <- pop_pars_all |>
+    filter(species_id == Sp) |>
+    select(!species_id) |>
+    slice_sample(n = REPLICATIONS)
+
+  pars_i <- pars_to_list(pop_pars[rep, ])
+
+  plot_pars_list <- readRDS(
+    file.path(SIM_DIR, "plot_parameters", paste0(Sp, ".RDS"))
+  ) |>
+    filter(plot_id == sim_pars$plot_id, year_measured == sim_pars$year_measured) |>
+    pull(plot_pars)
+  re_i <- plot_pars_list[[1]][rep, ] |> unlist() |> unname()
+
+  het_is_null <- is.null(unlist(sim_pars$het_dbh))
+  con_dbh     <- unlist(sim_pars$con_dbh)
+
+  # --- inner loop: project to equilibrium and record trajectory ---
+  # Each step records N and BA computed two ways:
+  #   _nowt : sum(Nvec)            / sum(BAind * Nvec)          -- no quadrature weights
+  #   _wt   : sum(Nvec * weights)  / sum(BAind * Nvec * weights) -- with quadrature weights
+  # For midpoint (weights = h = 1) the two are identical.
+  # Convergence is judged on the weighted N.
+  run_trajectory <- function(N_con_init, N_het) {
+    N_con_nowt   <- N_con_wt <- N_con_init
+    nochange     <- 0L
+    rows         <- vector("list", N_YEARS_MAX)
+    N_prev_nowt  <- sum(N_con_nowt$Nvec)
+    N_prev_wt  <- sum(N_con_wt$Nvec * N_con_wt$weights)
+
+    for (t in seq_len(N_YEARS_MAX)) {
+      K_nowt     <- mkKernel(N_con_nowt, N_het, 1, plot_size, temp_scl, prec_scl, pars_i, re_i, uw = FALSE)$K
+      K_wt       <- mkKernel(N_con_wt, N_het, 1, plot_size, temp_scl, prec_scl, pars_i, re_i, uw = TRUE)$K
+      
+      N_con_nowt$Nvec <- as.numeric(K_nowt %*% N_con_nowt$Nvec)
+      N_con_wt$Nvec <- as.numeric(K_wt %*% N_con_wt$Nvec)
+
+      BAind_nowt      <- pi * (N_con_nowt$meshpts / 2 * 1e-3)^2
+      BAind_wt        <- pi * (N_con_wt$meshpts / 2 * 1e-3)^2
+
+      N_nowt     <- sum(N_con_nowt$Nvec)
+      N_wt       <- sum(N_con_wt$Nvec * N_con_wt$weights)
+      BA_nowt    <- sum(BAind_nowt * N_con_nowt$Nvec * 1e4 / plot_size)
+      BA_wt      <- sum(BAind_wt * N_con_wt$Nvec * N_con_wt$weights * 1e4 / plot_size)
+
+      r_nowt <- if (is.finite(N_prev_nowt) && N_prev_nowt > 0) N_nowt / N_prev_nowt else NA_real_
+      r_wt   <- if (is.finite(N_prev_wt) && N_prev_wt > 0) N_wt   / N_prev_wt else NA_real_
+
+      rows[[t]] <- data.frame(
+        t           = t,
+        lambda_nowt = max(getEigenValues(K_nowt)),
+        lambda_wt   = max(getEigenValues(K_wt)),
+        r_nowt      = r_nowt,
+        r_wt        = r_wt,
+        N_nowt      = N_nowt,
+        N_wt        = N_wt,
+        BA_nowt     = BA_nowt,
+        BA_wt       = BA_wt
+      )
+
+      if (is.finite(N_prev_wt) && N_prev_wt > 0 &&
+          abs(N_wt - N_prev_wt) / N_prev_wt < CONV_TOL) {
+        nochange <- nochange + 1L
+      } else {
+        nochange <- 0L
+      }
+      if (nochange >= CONV_STEPS) break
+      if (!is.finite(N_wt) || N_wt <= 0) break
+      N_prev_nowt <- N_nowt
+      N_prev_wt <- N_wt
+    }
+
+    do.call(rbind, rows[seq_len(t)])
+  }
+
+  # --- midpoint trajectory ---
+  N_ref_mp <- init_pop_midpt(pars_i)
+  N_con_mp <- dbh_to_sizeDist(dbh = con_dbh, N_intra = N_ref_mp)
+  N_het_mp <- if (het_is_null) N_ref_mp else
+    dbh_to_sizeDist(dbh = unlist(sim_pars$het_dbh), N_intra = N_ref_mp)
+  mp_traj        <- run_trajectory(N_con_mp, N_het_mp)
+  mp_traj$method <- "midpoint"
+  mp_traj$ngl   <- NA_integer_
+
+  # --- GL trajectories ---
+  gl_trajs <- lapply(gl_sizes, function(n_gl) {
+    N_ref_gl <- init_pop_gl(pars_i, n_gl = n_gl)
+    N_con_gl <- dbh_to_sizeDist_gl(dbh = con_dbh, N_gl = N_ref_gl)
+    N_het_gl <- if (het_is_null) N_ref_gl else
+      dbh_to_sizeDist_gl(dbh = unlist(sim_pars$het_dbh), N_gl = N_ref_gl)
+    traj        <- run_trajectory(N_con_gl, N_het_gl)
+    traj$method <- paste0("GL_", n_gl)
+    traj$ngl   <- n_gl
+    traj
+  })
+
+  traj_all <- do.call(rbind, c(list(mp_traj), gl_trajs))
+  traj_all <- traj_all[, c("method", "ngl", "t",
+                            "lambda_nowt", "lambda_wt",
+                            "N_nowt", "N_wt",
+                            "BA_nowt", "BA_wt")]
+  rownames(traj_all) <- NULL
+
+  list(array_id = array_id, rep = rep, species = Sp, traj = traj_all)
+}
+
+# Example usage (not run automatically):
+res5 <- run_rep_trajectory(array_id = selected_rows[5], rep = 1L)
+
+out <- res4$traj |>
+  filter(!method %in% c("GL_20", "GL_50"))
+
+out |>
+  pivot_longer(contains("lambda_")) |>
+  ggplot() + 
+  aes(t, value) +
+  aes(color = name) +
+  facet_wrap(~method) +
+  geom_line() +
+  labs(y = "lambda")
+
+out |>
+  pivot_longer(contains("N_")) |>
+  ggplot() + 
+  aes(t, value) +
+  aes(color = name) +
+  facet_wrap(~method) +
+  geom_line() +
+  labs(y = "N")
+
+out |>
+  pivot_longer(contains("BA_")) |>
+  ggplot() + 
+  aes(t, value) +
+  aes(color = name) +
+  facet_wrap(~method) +
+  geom_line() +
+  labs(y = "BA")
