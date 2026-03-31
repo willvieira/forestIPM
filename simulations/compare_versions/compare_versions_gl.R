@@ -26,6 +26,7 @@ library(tidyverse)
 # ============================================================
 SIM_DIR      <- "simulations/covariates_perturbation"
 DATA_DIR     <- readLines("_data.path")
+OUT_DIR      <- "simulations/compare_versions"
 REPLICATIONS <- 100L         # must match reference to get identical parameter draws
                               # (slice_sample RNG consumption depends on n)
 PERTURBATION <- 0.01
@@ -158,7 +159,7 @@ compare_row_gl <- function(array_id) {
   plot_pars <- plot_pars_list[[1]]
 
   ref_output   <- final_output[[fo_idx[as.character(array_id)]]]
-  ref_lambda   <- mean(ref_output$lambda_base, na.rm = TRUE)
+  ref_lambdas  <- ref_output$lambda_base   # all 100 draws; already midpoint rule
   het_is_null  <- is.null(unlist(sim_pars$het_dbh))
 
   # --- Midpoint lambda (bin_w = 1, same as reference) ---
@@ -188,18 +189,18 @@ compare_row_gl <- function(array_id) {
           mkKernel(N_con, N_het, 1, plot_size, temp_scl, prec_scl, pars_i, re_i)$K
         ))
       }
-      mean(lams, na.rm = TRUE)
+      lams   # all REPLICATIONS values
     }),
     paste0("gl_", GL_SIZES)
   )
 
   list(
-    array_id     = array_id,
-    species      = Sp,
-    het_null     = het_is_null,
-    ref_lambda   = ref_lambda,
-    midpt_lambda = mean(midpt_lambdas, na.rm = TRUE),
-    gl_lambdas   = gl_lambdas
+    array_id    = array_id,
+    species     = Sp,
+    het_null    = het_is_null,
+    ref_lambdas = ref_lambdas,          # length-REPLICATIONS vector (midpoint, from cluster)
+    midpt_lambdas = midpt_lambdas,      # local recomputation — kept for validation only
+    gl_lambdas  = gl_lambdas            # named list of length-REPLICATIONS vectors
   )
 }
 
@@ -216,14 +217,19 @@ results <- lapply(selected_rows, function(id) {
     compare_row_gl(id),
     error = function(e) {
       cat(sprintf("ERROR: %s\n", conditionMessage(e)))
-      list(array_id = id, species = NA, het_null = NA,
-           ref_lambda = NA, midpt_lambda = NA,
-           gl_lambdas = setNames(as.list(rep(NA_real_, length(GL_SIZES))), paste0("gl_", GL_SIZES)))
+      list(array_id     = id, species = NA, het_null = NA,
+           ref_lambdas  = rep(NA_real_, REPLICATIONS),
+           midpt_lambdas = rep(NA_real_, REPLICATIONS),
+           gl_lambdas   = setNames(
+             lapply(GL_SIZES, function(...) rep(NA_real_, REPLICATIONS)),
+             paste0("gl_", GL_SIZES)
+           ))
     }
   )
-  cat(sprintf("ref=%.4f  midpt=%.4f  gl_%d=%.4f\n",
-              res$ref_lambda, res$midpt_lambda,
-              GL_SIZES[length(GL_SIZES)], res$gl_lambdas[[paste0("gl_", GL_SIZES[length(GL_SIZES)])]]))
+  cat(sprintf("midpt=%.4f  gl_%d=%.4f\n",
+              mean(res$ref_lambdas, na.rm = TRUE),
+              GL_SIZES[length(GL_SIZES)],
+              mean(res$gl_lambdas[[paste0("gl_", GL_SIZES[length(GL_SIZES)])]], na.rm = TRUE)))
   res
 })
 
@@ -232,39 +238,39 @@ results <- lapply(selected_rows, function(id) {
 # 8. Summary tables
 # ============================================================
 
-# 8a. Convergence table: lambda values by method
-cat("\n=== LAMBDA VALUES BY METHOD ===\n")
-cat(sprintf("%-10s %-16s %10s %10s %s\n",
-            "array_id", "species", "reference", "midpoint",
+# 8a. Convergence table: mean lambda values by method
+cat("\n=== MEAN LAMBDA BY METHOD ===\n")
+cat(sprintf("%-10s %-16s %10s %s\n",
+            "array_id", "species", "midpoint",
             paste(sprintf("GL(%d)", GL_SIZES), collapse = "  ")))
 cat(strrep("-", 80), "\n")
 
 for (r in results) {
-  gl_vals <- sapply(paste0("gl_", GL_SIZES), function(k) r$gl_lambdas[[k]])
-  cat(sprintf("%-10d %-16s %10.5f %10.5f  %s\n",
+  gl_vals <- sapply(paste0("gl_", GL_SIZES), function(k) mean(r$gl_lambdas[[k]], na.rm = TRUE))
+  cat(sprintf("%-10d %-16s %10.5f  %s\n",
               r$array_id, r$species %||% "NA",
-              r$ref_lambda %||% NA, r$midpt_lambda %||% NA,
+              mean(r$ref_lambdas, na.rm = TRUE),
               paste(sprintf("%8.5f", gl_vals), collapse = "  ")))
 }
 
-# 8b. Deviation from reference
-cat("\n=== ABSOLUTE DEVIATION FROM REFERENCE (|GL - ref|) ===\n")
-cat(sprintf("%-10s %-16s %10s %s\n",
-            "array_id", "species", "midpt_dev",
+# 8b. Deviation of GL mean from midpoint mean
+cat("\n=== ABSOLUTE DEVIATION FROM MIDPOINT (mean |GL - midpoint|) ===\n")
+cat(sprintf("%-10s %-16s %s\n",
+            "array_id", "species",
             paste(sprintf("GL(%d)_dev", GL_SIZES), collapse = "  ")))
 cat(strrep("-", 80), "\n")
 
 for (r in results) {
-  midpt_dev <- abs(r$midpt_lambda - r$ref_lambda)
-  gl_devs   <- sapply(paste0("gl_", GL_SIZES), function(k) abs(r$gl_lambdas[[k]] - r$ref_lambda))
-  cat(sprintf("%-10d %-16s %10.2e  %s\n",
+  ref_mean <- mean(r$ref_lambdas, na.rm = TRUE)
+  gl_devs  <- sapply(paste0("gl_", GL_SIZES),
+                     function(k) abs(mean(r$gl_lambdas[[k]], na.rm = TRUE) - ref_mean))
+  cat(sprintf("%-10d %-16s %s\n",
               r$array_id, r$species %||% "NA",
-              midpt_dev,
               paste(sprintf("%9.2e", gl_devs), collapse = "  ")))
 }
 
-# 8c. Convergence: GL(n) vs GL(max_n) — shows quadrature convergence independent of reference
-cat(sprintf("\n=== GL CONVERGENCE: |GL(n) - GL(%d)| ===\n", GL_SIZES[length(GL_SIZES)]))
+# 8c. Convergence: GL(n) vs GL(max_n) — shows quadrature convergence independent of midpoint
+cat(sprintf("\n=== GL CONVERGENCE: |GL(n) - GL(%d)| (mean lambda) ===\n", GL_SIZES[length(GL_SIZES)]))
 convergence_sizes <- GL_SIZES[-length(GL_SIZES)]
 cat(sprintf("%-10s %-16s %s\n",
             "array_id", "species",
@@ -272,28 +278,68 @@ cat(sprintf("%-10s %-16s %s\n",
 cat(strrep("-", 60), "\n")
 
 for (r in results) {
-  ref_gl  <- r$gl_lambdas[[paste0("gl_", GL_SIZES[length(GL_SIZES)])]]
-  conv_devs <- sapply(paste0("gl_", convergence_sizes), function(k) abs(r$gl_lambdas[[k]] - ref_gl))
+  ref_gl    <- mean(r$gl_lambdas[[paste0("gl_", GL_SIZES[length(GL_SIZES)])]], na.rm = TRUE)
+  conv_devs <- sapply(paste0("gl_", convergence_sizes),
+                      function(k) abs(mean(r$gl_lambdas[[k]], na.rm = TRUE) - ref_gl))
   cat(sprintf("%-10d %-16s %s\n",
               r$array_id, r$species %||% "NA",
               paste(sprintf("%8.2e", conv_devs), collapse = "  ")))
 }
 
-# 8d. Pass/fail summary
+# 8d. Pass/fail summary (mean lambda deviation vs midpoint)
 cat(sprintf("\n=== PASS/FAIL SUMMARY (GL tolerance: %g) ===\n", GL_TOL))
 for (n_gl in GL_SIZES) {
   key    <- paste0("gl_", n_gl)
-  devs   <- sapply(results, function(r) abs(r$gl_lambdas[[key]] - r$ref_lambda))
+  devs   <- sapply(results, function(r)
+    abs(mean(r$gl_lambdas[[key]], na.rm = TRUE) - mean(r$ref_lambdas, na.rm = TRUE)))
   n_pass <- sum(devs < GL_TOL, na.rm = TRUE)
   max_d  <- max(devs, na.rm = TRUE)
   cat(sprintf("  GL(%3d): %d/%d PASS  max_dev = %.2e\n",
               n_gl, n_pass, length(results), max_d))
 }
 
-midpt_devs <- sapply(results, function(r) abs(r$midpt_lambda - r$ref_lambda))
-cat(sprintf("  midpt  : %d/%d PASS  max_dev = %.2e  (tol=%g)\n",
+# Local midpoint recomputation validation vs reference (should match within MIDPT_TOL)
+midpt_devs <- sapply(results, function(r)
+  abs(mean(r$midpt_lambdas, na.rm = TRUE) - mean(r$ref_lambdas, na.rm = TRUE)))
+cat(sprintf("  midpt recompute: %d/%d PASS  max_dev = %.2e  (tol=%g)\n",
             sum(midpt_devs < MIDPT_TOL, na.rm = TRUE), length(results),
             max(midpt_devs, na.rm = TRUE), MIDPT_TOL))
+
+
+# ============================================================
+# 8e. Save lambda comparison table (one row per replicate draw)
+# ============================================================
+# "midpoint" = ref_lambdas from final_output.RDS (cluster run, midpoint rule)
+# "GL"       = recomputed locally with GL quadrature
+# midpt_lambdas (local recompute) are excluded — they duplicate "midpoint"
+tbl_lambda <- bind_rows(lapply(results, function(r) {
+  n_rep <- length(r$ref_lambdas)
+  midpt_rows <- tibble(
+    array_id = r$array_id,
+    species  = r$species,
+    het_null = r$het_null,
+    method   = "midpoint",
+    n_gl     = NA_integer_,
+    rep      = seq_len(n_rep),
+    lambda   = r$ref_lambdas
+  )
+  gl_rows <- bind_rows(lapply(GL_SIZES, function(n) {
+    tibble(
+      array_id = r$array_id,
+      species  = r$species,
+      het_null = r$het_null,
+      method   = "GL",
+      n_gl     = n,
+      rep      = seq_len(n_rep),
+      lambda   = r$gl_lambdas[[paste0("gl_", n)]]
+    )
+  }))
+  bind_rows(midpt_rows, gl_rows)
+}))
+
+saveRDS(tbl_lambda, file.path(OUT_DIR, "table_lambda_comparison.RDS"))
+cat(sprintf("\nSaved table_lambda_comparison.RDS (%d rows, %d methods × %d GL sizes × %d reps × %d scenarios)\n",
+            nrow(tbl_lambda), 1L, length(GL_SIZES), REPLICATIONS, length(selected_rows)))
 
 
 # ============================================================
@@ -323,6 +369,8 @@ bench_fn <- function(fn, n = BENCH_REPS) {
   }
   times
 }
+
+bench_results <- list()
 
 for (bench_sp_short in BENCH_SPS) {
   # Find first non-missing row whose species_id ends with bench_sp_short
@@ -391,4 +439,31 @@ for (bench_sp_short in BENCH_SPS) {
                 med, min(t_gl[[j]]), max(t_gl[[j]]),
                 midpt_med / med))
   }
+
+  # Collect benchmark rows for saving
+  sp_rows_out <- bind_rows(
+    tibble(
+      species_short = bench_sp_short,
+      species       = bsp,
+      n_midpt_bins  = n_midpt,
+      method        = "midpoint",
+      n_gl          = NA_integer_,
+      time_s        = t_midpt
+    ),
+    bind_rows(lapply(seq_along(BENCH_GL), function(j) {
+      tibble(
+        species_short = bench_sp_short,
+        species       = bsp,
+        n_midpt_bins  = n_midpt,
+        method        = "GL",
+        n_gl          = BENCH_GL[j],
+        time_s        = t_gl[[j]]
+      )
+    }))
+  )
+  bench_results[[bench_sp_short]] <- sp_rows_out
 }
+
+tbl_benchmark <- bind_rows(bench_results)
+saveRDS(tbl_benchmark, file.path(OUT_DIR, "table_benchmark.RDS"))
+cat(sprintf("\nSaved table_benchmark.RDS (%d rows)\n", nrow(tbl_benchmark)))
