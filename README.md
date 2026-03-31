@@ -47,8 +47,7 @@ devtools::install_github("willvieira/forestIPM")
 
 The mathematical model underlying `{forestIPM}` has been formally verified using
 [Lean 4](https://lean-lang.org/) and [Mathlib](https://leanprover-community.github.io/mathlib4_docs/).
-Each component (growth, survival, recruitment, competition) has a corresponding
-Lean module that proves key mathematical properties — such as convergence, non-negativity, and boundedness — hold by construction, independent of any numerical implementation.
+Each component of the model pipeline has a corresponding Lean module that proves key mathematical properties — such as convergence, non-negativity, and boundedness — hold by construction, independent of any numerical implementation.
 
 These are not tests of the R code; they are machine-checked proofs that the *mathematical model* is internally consistent. The source files live in [`lean/`](lean/).
 
