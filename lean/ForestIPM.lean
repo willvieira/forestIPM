@@ -12,6 +12,7 @@ Model implemented in `R/`.  Each sub-module formalizes one component of the mode
 | Covariates         | `Competition`      | `BasalArea_competition.R` | BA formula, non-negativity, monotonicity |
 |                    | `Climate`          | `vital_rates.R`       | Bell curve response: positivity, maximum at optimum, strict mono |
 | Population model   | `GaussLegendre`    | `gauss_legendre.R`    | Quadrature weight positivity and sum = `b − a` |
+|                    | `MidpointRule`     | `stand.R`             | Midpoint weight positivity, sum = `n * h`, mesh points in interval |
 |                    | `Kernel`           | `kernel.R`            | `K = P + F`, non-negativity |
 | Engines            | `AsymptoticLambda` | `lambda.R`            | `λ = max(eigenvalues(K))` — ecological interpretation |
 |                    | `CommunityDynamic` | `project.R`           | `n_{t+1} = K(n_t)·n_t`, non-negativity invariant, equilibrium |
@@ -23,6 +24,7 @@ import ForestIPM.Ingrowth
 import ForestIPM.Competition
 import ForestIPM.Climate
 import ForestIPM.GaussLegendre
+import ForestIPM.MidpointRule
 import ForestIPM.Kernel
 import ForestIPM.AsymptoticLambda
 import ForestIPM.CommunityDynamic
