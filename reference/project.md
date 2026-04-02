@@ -1,6 +1,6 @@
-# Project population or community dynamics through time
+# Project population dynamics over time
 
-Project population or community dynamics through time
+Project population dynamics over time
 
 ## Usage
 

@@ -16,7 +16,7 @@ parameters(mod, draw = "random", seed = NULL)
 
 - draw:
 
-  Character `"mean"` or `"random"`, or a positive integer 1-2000
+  Character `"mean"` or `"random"`, or a positive integer 1-1000
   selecting a specific posterior draw index.
 
 - seed:
@@ -34,7 +34,7 @@ An object of S3 class `"ipm_parameters"`.
 ``` r
 df <- data.frame(size_mm = c(150, 200, 350),
                  species_id = "ABIBAL",
-                 plot_size  = 400)
+                 plot_size  = 1000)
 s    <- stand(df)
 mod  <- species_model(s)
 pars <- parameters(mod, draw = "mean")

@@ -13,7 +13,7 @@ Functions to build IPM components
 - [`parameters()`](https://willvieira.github.io/forestIPM/reference/parameters.md)
   : Resolve a single parameter realization from Bayesian posteriors
 - [`control()`](https://willvieira.github.io/forestIPM/reference/control.md)
-  : Configure IPM lambda and project engine settings
+  : Configure IPM projection settings
 
 ## IPM Engines
 
@@ -22,7 +22,7 @@ Functions to run IPM calculations
 - [`lambda()`](https://willvieira.github.io/forestIPM/reference/lambda.md)
   : Compute the asymptotic population growth rate (lambda) per species
 - [`project()`](https://willvieira.github.io/forestIPM/reference/project.md)
-  : Project population or community dynamics through time
+  : Project population dynamics over time
 
 ## Utilities
 

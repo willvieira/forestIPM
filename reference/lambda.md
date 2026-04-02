@@ -54,5 +54,5 @@ ctrl <- control(years = 5, compute_lambda = TRUE, progress = FALSE)
 lam  <- lambda(mod, pars, s, env, ctrl)
 print(lam)
 #> <ipm_lambda>  draw=mean
-#>   ABIBAL: 2.0763
+#>   ABIBAL: 2.0762
 ```

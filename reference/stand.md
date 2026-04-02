@@ -32,5 +32,5 @@ df <- data.frame(size_mm = c(150, 200, 350),
                  plot_size  = 1000)
 s <- stand(df)
 print(s)
-#> <ipm_stand>  1.45 m2/ha BA | 1 species | 1000 m2 plot
+#> <ipm_stand>  3 trees | 1 species | 1000 m2 plot
 ```
