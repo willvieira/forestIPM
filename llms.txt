@@ -1,0 +1,158 @@
+# forestIPM
+
+[![R-CMD-check](https://github.com/willvieira/forestIPM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/willvieira/forestIPM/actions/workflows/R-CMD-check.yaml)
+[![codecov](https://codecov.io/github/willvieira/forestIPM/graph/badge.svg)](https://app.codecov.io/github/willvieira/forestIPM)
+[![Lean
+proofs](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/willvieira/forestIPM/master/lean/proof-status.json)](https://github.com/willvieira/forestIPM/tree/master/lean)
+
+[forestIPM](https://github.com/willvieira/forestIPM) is an R package
+implementing a Bayesian hierarchical Integral Projection Model (IPM)
+designed to study tree population dynamics in eastern North America. It
+combines growth, survival, and recruitment models, each parameterized as
+a function of climate and competition using forest inventory data. The
+package provides two engines to compute population growth rates
+($\lambda$) for 31 tree species and to simulate plot-level community
+dynamics over time.
+
+This framework enables users to explore how demographic processes scale
+up to community patterns. More broadly,
+[forestIPM](https://github.com/willvieira/forestIPM) can be used to
+investigate the effects of climate warming on tree performance, evaluate
+the sensitivity of $\lambda$ to climate and competition
+([📄](https://willvieira.github.io/ms_forest-ipm-sensitivity/)), examine
+how stochastic $\lambda$ influences species range limits
+([📄](https://willvieira.github.io/ms_forest-suitable-probability/)),
+provides a foundation for studying the mechanisms driving species
+coexistence, and many more.
+
+## Documentation
+
+A complete description of the methodology, ranging from fitting
+hierarchical Bayesian demographic models to constructing the IPM and
+applying it to ecological questions, is available in the companion book:
+
+📓 **[Forest Demography IPM
+Book](https://willvieira.github.io/book_forest-demography-IPM/)**
+
+## Basic usage
+
+The package website provides the [function
+reference](https://willvieira.github.io/forestIPM/reference/index.html).
+The workflow is structured around 5 constructor functions used to define
+the key components of the model:
+
+- [`stand()`](https://willvieira.github.io/forestIPM/reference/stand.md)
+  representing a forest plot
+- [`species_model()`](https://willvieira.github.io/forestIPM/reference/species_model.md)
+  defining which species to model
+- [`env_condition()`](https://willvieira.github.io/forestIPM/reference/env_condition.md)
+  specifying climate drivers
+- [`parameters()`](https://willvieira.github.io/forestIPM/reference/parameters.md)
+  defining a single reproducible parameter realization from Bayesian
+  posteriors
+- [`control()`](https://willvieira.github.io/forestIPM/reference/control.md)
+  Configure IPM projection settings
+
+These components are then passed to two main IPM engines:
+
+- [`lambda()`](https://willvieira.github.io/forestIPM/reference/lambda.md)
+  computing population growth rate (lambda) per species
+- [`project()`](https://willvieira.github.io/forestIPM/reference/project.md)
+  projecting population or community dynamics through time
+
+For a step-by-step introduction to the package, see the [Get
+Started](https://willvieira.github.io/book_forest-demography-IPM/guide_IPM.html)
+vignette in the IPM Book.
+
+## Installation
+
+``` r
+# install.packages("devtools")
+devtools::install_github("willvieira/forestIPM")
+```
+
+## Mathematical Specification (Lean 4)
+
+The mathematical model underlying
+[forestIPM](https://github.com/willvieira/forestIPM) has been formally
+verified using [Lean 4](https://lean-lang.org/) and
+[Mathlib](https://leanprover-community.github.io/mathlib4_docs/). Each
+component of the model pipeline has a corresponding Lean module that
+proves key mathematical properties — such as convergence,
+non-negativity, and boundedness — hold by construction, independent of
+any numerical implementation.
+
+These are not tests of the R code; they are machine-checked proofs that
+the *mathematical model* is internally consistent. The source files live
+in [`lean/`](https://willvieira.github.io/forestIPM/lean/).
+
+| Component          | Module           | Theorems | Proved | Sorry | Status       |
+|--------------------|------------------|----------|--------|-------|--------------|
+| Demographic models | Growth           | 4        | 4      | 0     | fully proved |
+|                    | Survival         | 4        | 4      | 0     | fully proved |
+|                    | Ingrowth         | 9        | 8      | 1     | 1 open       |
+| Covariates         | Competition      | 5        | 5      | 0     | fully proved |
+|                    | Climate          | 7        | 7      | 0     | fully proved |
+| Population model   | MidpointRule     | 4        | 4      | 0     | fully proved |
+|                    | GaussLegendre    | 4        | 2      | 2     | 2 open       |
+|                    | Kernel           | 6        | 5      | 1     | 1 open       |
+| Engines            | AsymptoticLambda | 6        | 1      | 5     | 5 open       |
+|                    | CommunityDynamic | 7        | 6      | 1     | 1 open       |
+|                    | **Total**        | 56       | 46     | 10    |              |
+
+> Table auto-generated by
+> [lean/proof_status.sh](https://willvieira.github.io/forestIPM/lean/proof_status.sh).
+> “Sorry” indicates theorems stated but not yet proved (open proof
+> obligations).
+
+## Citation
+
+If you use this package in your research, please cite the associated
+[article](https://willvieira.github.io/ms_forest-ipm-sensitivity/).
+
+# Package index
+
+## IPM Constructors
+
+Functions to build IPM components
+
+- [`stand()`](https://willvieira.github.io/forestIPM/reference/stand.md)
+  : Create an ipm_stand object representing a forest plot
+- [`species_model()`](https://willvieira.github.io/forestIPM/reference/species_model.md)
+  : Create an ipm_spModel object defining which species to model
+- [`env_condition()`](https://willvieira.github.io/forestIPM/reference/env_condition.md)
+  : Create an ipm_env object specifying climate drivers
+- [`parameters()`](https://willvieira.github.io/forestIPM/reference/parameters.md)
+  : Resolve a single parameter realization from Bayesian posteriors
+- [`control()`](https://willvieira.github.io/forestIPM/reference/control.md)
+  : Configure IPM lambda and project engine settings
+
+## IPM Engines
+
+Functions to run IPM calculations
+
+- [`lambda()`](https://willvieira.github.io/forestIPM/reference/lambda.md)
+  : Compute the asymptotic population growth rate (lambda) per species
+- [`project()`](https://willvieira.github.io/forestIPM/reference/project.md)
+  : Project population or community dynamics through time
+
+## Utilities
+
+Helper functions
+
+- [`supported_species()`](https://willvieira.github.io/forestIPM/reference/supported_species.md)
+  : Return the tibble of species supported by forestIPM
+- [`scale_env()`](https://willvieira.github.io/forestIPM/reference/scale_env.md)
+  : Scale environmental values to \[0, 1\]
+- [`unscale_env()`](https://willvieira.github.io/forestIPM/reference/unscale_env.md)
+  : Unscale environmental values from \[0, 1\] to natural units
+- [`set_random_effects()`](https://willvieira.github.io/forestIPM/reference/set_random_effects.md)
+  : Set plot-level random effects for one or more species
+
+## Visualization
+
+Plotting and diagnostic functions
+
+- [`plot(`*`<ipm_projection>`*`)`](https://willvieira.github.io/forestIPM/reference/plot.ipm_projection.md)
+  : Plot an ipm_projection object
+
