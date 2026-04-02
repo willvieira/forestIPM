@@ -14,6 +14,26 @@
 
 * Replaced base R `eigen()` with C++ `Eigen::SelfAdjointEigenSolver` via RcppEigen for the Golub-Welsch eigendecomposition — faster node/weight computation for large `n_gl` values.
 
+* `ipm_lambda` and `ipm_projection` objects now store the full `stand`, `env`, `pars`, and `ctrl` objects in their `conditions` attribute instead of individual scalar fields — enables complete reproducibility from a saved result.
+
+* `print()` and `summary()` for `ipm_lambda` and `ipm_projection` now correctly display time-varying climate inputs as `"function(t)"` when `env$MAT` or `env$MAP` is a function.
+
+* Added Lean 4 formal mathematical proofs for core IPM components: Gauss-Legendre quadrature, midpoint rule, growth/survival/ingrowth vital rates, kernel assembly, asymptotic lambda, competition, climate scaling, and community dynamics.
+
+## Bug fixes
+
+* Fixed `lambda()`: building size distributions now uses only the focal species instead of the union of all species in the stand — single-species models no longer include extraneous species in the mesh computation (#BUG-04).
+
+* Fixed `project()` with `on_missing = "static"`: static competitors now correctly freeze at their initial sizes throughout the projection instead of being incorrectly dropped (#BUG-05).
+
+* Removed a null-guard in `parameters()` that silently returned empty parameter lists when species data was not found — `parameters()` now raises an informative error immediately (#BUG-06).
+
+## Tests
+
+* Added tests for `set_random_effects()` covering draw type resolution, seed reproducibility, and random effect application across species.
+
+* Added integration test for two-species interactions, verifying that interspecific competition affects lambda as expected.
+
 # forestIPM 1.0.0
 
 Initial release of **forestIPM** — a Bayesian hierarchical Integral Projection Model (IPM)
